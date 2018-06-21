@@ -14,12 +14,9 @@ namespace SimpleEventSourcing.Samples
             var ordersCartEventView = new OrdersCartEventView();
 
             // Link store events and views
-            eventStore.ObserveEvent()
-                .Subscribe(@event =>
-                {
-                    totalCostCartEventView.Handle(@event);
-                    ordersCartEventView.Handle(@event);
-                });
+            var events = eventStore.ObserveEvent();
+            events.Subscribe(totalCostCartEventView.Handle);
+            events.Subscribe(ordersCartEventView.Handle);
 
             // Listen to views changes
             totalCostCartEventView.ObserveState()
