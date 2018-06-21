@@ -1,4 +1,6 @@
-﻿using System.Reactive.Subjects;
+﻿using System;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 
 namespace SimpleEventSourcing
 {
@@ -18,7 +20,11 @@ namespace SimpleEventSourcing
             State = Execute(State, @event);
             _stateSubject.OnNext(State);
         }
+        public IObservable<TState> ObserveState()
+        {
+            return _stateSubject.DistinctUntilChanged();
+        }
 
-        public abstract TState Execute(TState state, object @event);
+        protected abstract TState Execute(TState state, object @event);
     }
 }
