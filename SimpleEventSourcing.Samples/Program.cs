@@ -87,7 +87,7 @@ namespace SimpleEventSourcing.Samples
         {
         }
 
-        protected override TotalCostCartState Execute(TotalCostCartState state, object @event)
+        protected override TotalCostCartState Reduce(TotalCostCartState state, object @event)
         {
             if (@event is AddItemInCartEvent addItemInCartEvent)
             {
@@ -124,7 +124,7 @@ namespace SimpleEventSourcing.Samples
         {
         }
 
-        protected override OrdersCartState Execute(OrdersCartState state, object @event)
+        protected override OrdersCartState Reduce(OrdersCartState state, object @event)
         {
             if (@event is AddItemInCartEvent addItemInCartEvent)
             {
