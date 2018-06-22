@@ -40,6 +40,18 @@ namespace SimpleEventSourcing
         {
             return _stateSubject.DistinctUntilChanged();
         }
+        /// <summary>
+        /// Observes a value derived from the state of the view.
+        /// </summary>
+        /// <typeparam name="TPartial">The type of the partial state to be observed.</typeparam>
+        /// <param name="selector">
+        /// The mapping function that can be applied to get the desired partial state of type <typeparamref name="TPartial"/> from an instance of <typeparamref name="TState"/>.
+        /// </param>
+        /// <returns></returns>
+        public IObservable<TPartial> ObserveState<TPartial>(Func<TState, TPartial> selector)
+        {
+            return _stateSubject.Select(selector).DistinctUntilChanged();
+        }
 
         /// <summary>
         /// Reduces the specified state using the specified event and returns the new state. Does not mutate the current state of the view.
