@@ -10,16 +10,18 @@ namespace SimpleEventSourcing
 
         public TState State { get; private set; }
 
-        protected EventView(TState initialState = null)
+        protected EventView(IObservable<object> events, TState initialState = null)
         {
             State = initialState ?? new TState();
+
+            events
+                .Subscribe(@event =>
+                {
+                    State = Execute(State, @event);
+                    _stateSubject.OnNext(State);
+                });
         }
 
-        public void Handle(object @event)
-        {
-            State = Execute(State, @event);
-            _stateSubject.OnNext(State);
-        }
         public IObservable<TState> ObserveState()
         {
             return _stateSubject.DistinctUntilChanged();

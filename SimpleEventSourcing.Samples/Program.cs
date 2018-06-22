@@ -10,14 +10,11 @@ namespace SimpleEventSourcing.Samples
         {
             // Create Event Store (Write model) and Event Views (Read model)
             var eventStore = new CartEventStore();
-            var totalCostCartEventView = new TotalCostCartEventView();
-            var ordersCartEventView = new OrdersCartEventView();
+            var events = eventStore.ObserveEvent(); // get event stream to link event store and views
 
-            // Link store events and views
-            var events = eventStore.ObserveEvent();
-            events.Subscribe(totalCostCartEventView.Handle);
-            events.Subscribe(ordersCartEventView.Handle);
-
+            var totalCostCartEventView = new TotalCostCartEventView(events);
+            var ordersCartEventView = new OrdersCartEventView(events);
+            
             // Listen to views changes
             totalCostCartEventView.ObserveState()
                 .Subscribe(state =>
@@ -86,6 +83,10 @@ namespace SimpleEventSourcing.Samples
     }
     public class TotalCostCartEventView : EventView<TotalCostCartState>
     {
+        public TotalCostCartEventView(IObservable<object> events) : base(events)
+        {
+        }
+
         protected override TotalCostCartState Execute(TotalCostCartState state, object @event)
         {
             if (@event is AddItemInCartEvent addItemInCartEvent)
@@ -119,6 +120,10 @@ namespace SimpleEventSourcing.Samples
     }
     public class OrdersCartEventView : EventView<OrdersCartState>
     {
+        public OrdersCartEventView(IObservable<object> events) : base(events)
+        {
+        }
+
         protected override OrdersCartState Execute(OrdersCartState state, object @event)
         {
             if (@event is AddItemInCartEvent addItemInCartEvent)
