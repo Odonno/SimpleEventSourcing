@@ -61,22 +61,25 @@ namespace SimpleEventSourcing.Samples.Database
                         "
                     );
 
+                    connection.Execute(
+                        @"
+                        CREATE TABLE IF NOT EXISTS [Item] (
+                            [Name] VARCHAR(200) NOT NULL PRIMARY KEY,
+                            [UnitCost] DECIMAL(12, 2) NOT NULL
+                        );
+
+                        INSERT INTO [Item]
+                        VALUES ('Book', 30);
+                        INSERT INTO [Item]
+                        VALUES ('Car', 14000);
+                        INSERT INTO [Item]
+                        VALUES ('Candy', 0.8);"
+                    );
+
                     if (version == 1)
                     {
                         connection.Execute(
                             @"
-                            CREATE TABLE IF NOT EXISTS [Item] (
-                                [Name] VARCHAR(200) NOT NULL PRIMARY KEY,
-                                [UnitCost] DECIMAL(12, 2) NOT NULL
-                            );
-
-                            INSERT INTO [Item]
-                            VALUES ('Book', 30);
-                            INSERT INTO [Item]
-                            VALUES ('Car', 14000);
-                            INSERT INTO [Item]
-                            VALUES ('Candy', 0.8);
-
                             CREATE TABLE IF NOT EXISTS [Cart] (
                                 [Id] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                                 [ItemName] VARCHAR(200) NOT NULL,
@@ -86,7 +89,16 @@ namespace SimpleEventSourcing.Samples.Database
                     }
                     if (version == 2)
                     {
-                        // TODO
+                        connection.Execute(
+                            @"
+                            CREATE TABLE IF NOT EXISTS [Cart] (
+                                [Id] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                                [ItemName] VARCHAR(200) NOT NULL,
+                                [NumberOfUnits] INTEGER NOT NULL,
+                                [CreatedDate] DATETIME NOT NULL,
+                                [UpdatedDate] DATETIME NULL
+                            );"
+                        );
                     }
 
                     connection.Execute("DELETE FROM [Version]");

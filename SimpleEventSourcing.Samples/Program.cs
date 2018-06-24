@@ -155,11 +155,70 @@ namespace SimpleEventSourcing.Samples
                 }
                 if (choice == "4")
                 {
-                    // TODO : Create Events database (if not exists)
-                    // TODO : Create Views database (if not exists and different)
+                    // Create Events database (if not exists)
+                    CreateEventsDatabase();
 
-                    // TODO : Clear Views database and replay Events (if any in database)
-                    // TODO : Or store new events
+                    // Create Views database (if not exists and different)
+                    CreateViewsDatabase(2);
+
+                    var events = GetEventsFromDatabase();
+
+                    // Create Event Store (Write model) and Event Views (Read model)
+                    var eventStore = new Database.CartEventStore();
+                    var eventsObservable = eventStore.ObserveEvent(); // get event stream to link event store and views
+
+                    var cartTableEventView = new Database.Version2.CartTableEventView(eventsObservable);
+
+                    if (events.Any())
+                    {
+                        // TODO : Clear Views database and replay Events (if any in database)
+                    }
+                    else
+                    {
+                        // Dispatch new events
+                        eventStore.Dispatch(new AddItemInCartEvent
+                        {
+                            ItemName = "Book"
+                        });
+                        eventStore.Dispatch(new AddItemInCartEvent
+                        {
+                            ItemName = "Car"
+                        });
+                        eventStore.Dispatch(new AddItemInCartEvent
+                        {
+                            ItemName = "Candy",
+                            NumberOfUnits = 12
+                        });
+                        eventStore.Dispatch(new ResetCartEvent());
+                        eventStore.Dispatch(new AddItemInCartEvent
+                        {
+                            ItemName = "Book",
+                            NumberOfUnits = 2
+                        });
+                        eventStore.Dispatch(new AddItemInCartEvent
+                        {
+                            ItemName = "Book",
+                            NumberOfUnits = 3
+                        });
+                        eventStore.Dispatch(new RemoveItemFromCartEvent
+                        {
+                            ItemName = "Book"
+                        });
+                    }
+
+                    // Get data from read model after all events are dispatched
+                    decimal totalCost = GetTotalCostInCart();
+                    Console.WriteLine($"Total cost: ${totalCost}");
+
+                    var cartRows = GetCart();
+                    if (cartRows.Any())
+                    {
+                        Console.WriteLine($"Cart: {string.Join(", ", cartRows.Select(item => item.ItemName + " x" + item.NumberOfUnits))}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("Cart: Empty");
+                    }
                 }
                 if (choice == "5")
                 {
