@@ -18,6 +18,21 @@ namespace SimpleEventSourcing.Samples.Database.Version2
             }
         }
 
+        public override void Replay(IEnumerable<object> events)
+        {
+            // Clear Views database 
+            using (var connection = GetViewsDatabaseConnection())
+            {
+                connection.Execute(
+                    @"
+                    DELETE FROM [Cart]
+                    "
+                );
+            }
+
+            base.Replay(events);
+        }
+
         protected override void Handle(object @event)
         {
             if (@event is AddItemInCartEvent addItemInCartEvent)

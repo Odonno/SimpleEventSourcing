@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 
@@ -13,6 +14,11 @@ namespace SimpleEventSourcing
         protected EventView(IObservable<object> events)
         {
             events.Subscribe(Handle);
+        }
+
+        public virtual void Replay(IEnumerable<object> events)
+        {
+            events.ToObservable().Subscribe(Handle);
         }
 
         protected abstract void Handle(object @event);

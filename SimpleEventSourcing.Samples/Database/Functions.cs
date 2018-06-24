@@ -115,9 +115,10 @@ namespace SimpleEventSourcing.Samples.Database
                     .Query<EventInfo>("SELECT * FROM [Event] ORDER BY [Id] ASC")
                     .Select(eventInfo =>
                     {
-                        var type = Type.GetType(eventInfo.EventName);
-                        return JsonConvert.DeserializeObject(eventInfo.Data);
-                    });
+                        var type = Type.GetType("SimpleEventSourcing.Samples." + eventInfo.EventName);
+                        return JsonConvert.DeserializeObject(eventInfo.Data, type);
+                    })
+                    .ToList();
             }
         }
 

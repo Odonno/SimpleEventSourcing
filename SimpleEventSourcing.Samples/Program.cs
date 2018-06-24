@@ -104,7 +104,8 @@ namespace SimpleEventSourcing.Samples
 
                     if (events.Any())
                     {
-                        // TODO : Clear Views database and replay Events (if any in database)
+                        // Replay Events
+                        cartTableEventView.Replay(events);
                     }
                     else
                     {
@@ -171,7 +172,8 @@ namespace SimpleEventSourcing.Samples
 
                     if (events.Any())
                     {
-                        // TODO : Clear Views database and replay Events (if any in database)
+                        // Replay Events
+                        cartTableEventView.Replay(events);
                     }
                     else
                     {

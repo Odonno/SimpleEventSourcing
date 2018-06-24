@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Linq;
 using static SimpleEventSourcing.Samples.DatabaseConfiguration;
 
 namespace SimpleEventSourcing.Samples.Database.Version1
@@ -16,6 +17,21 @@ namespace SimpleEventSourcing.Samples.Database.Version1
             {
                 _cartItems = connection.Query<CartItem>("SELECT * FROM [Item]");
             }
+        }
+
+        public override void Replay(IEnumerable<object> events)
+        {
+            // Clear Views database 
+            using (var connection = GetViewsDatabaseConnection())
+            {
+                connection.Execute(
+                    @"
+                    DELETE FROM [Cart]
+                    "
+                );
+            }
+
+            base.Replay(events);
         }
 
         protected override void Handle(object @event)
