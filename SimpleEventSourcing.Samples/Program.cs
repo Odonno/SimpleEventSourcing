@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Immutable;
 using System.Linq;
+using static SimpleEventSourcing.Samples.Database.Functions;
 
 namespace SimpleEventSourcing.Samples
 {
@@ -8,173 +8,167 @@ namespace SimpleEventSourcing.Samples
     {
         public static void Main(string[] args)
         {
-            // Create Event Store (Write model) and Event Views (Read model)
-            var eventStore = new CartEventStore();
-            var events = eventStore.ObserveEvent(); // get event stream to link event store and views
+            while (true)
+            {
+                Console.WriteLine("1 - Play & Store events in-memory");
+                Console.WriteLine("2 - Clear the SQLite database");
+                Console.WriteLine("3 - Play & Store events in a SQLite database (v1)");
+                Console.WriteLine("4 - Play & Store events in a SQLite database (v2)");
+                Console.WriteLine("5 - Exit application");
 
-            var totalCostCartEventView = new TotalCostCartEventView(events);
-            var ordersCartEventView = new OrdersCartEventView(events);
-            
-            // Listen to views changes
-            totalCostCartEventView.ObserveState()
-                .Subscribe(state =>
-                {
-                    Console.WriteLine($"Total cost: ${state.TotalCost}");
-                });
+                Console.WriteLine("Please select a choice / number: ");
+                string choice = Console.ReadLine();
 
-            ordersCartEventView.ObserveState()
-                .Subscribe(state =>
+                if (choice == "1")
                 {
-                    if (state.Items.IsEmpty)
+                    // Create Event Store (Write model) and Event Views (Read model)
+                    var eventStore = new InMemory.CartEventStore();
+                    var eventsObservable = eventStore.ObserveEvent(); // get event stream to link event store and views
+
+                    var totalCostCartEventView = new InMemory.TotalCostCartEventView(eventsObservable);
+                    var ordersCartEventView = new InMemory.OrdersCartEventView(eventsObservable);
+
+                    // Listen to views changes
+                    totalCostCartEventView.ObserveState()
+                        .Subscribe(state =>
+                        {
+                            Console.WriteLine($"Total cost: ${state.TotalCost}");
+                        });
+
+                    ordersCartEventView.ObserveState()
+                        .Subscribe(state =>
+                        {
+                            if (state.Items.IsEmpty)
+                            {
+                                Console.WriteLine("Cart: Empty");
+                            }
+                            else
+                            {
+                                Console.WriteLine($"Cart: {string.Join(", ", state.Items.Select(item => item.Key + " x" + item.Value))}");
+                            }
+                        });
+
+                    // Dispatch events
+                    eventStore.Dispatch(new AddItemInCartEvent
                     {
-                        Console.WriteLine("Cart: Empty");
+                        ItemName = "Book"
+                    });
+                    eventStore.Dispatch(new AddItemInCartEvent
+                    {
+                        ItemName = "Car"
+                    });
+                    eventStore.Dispatch(new AddItemInCartEvent
+                    {
+                        ItemName = "Candy",
+                        NumberOfUnits = 12
+                    });
+                    eventStore.Dispatch(new ResetCartEvent());
+                    eventStore.Dispatch(new AddItemInCartEvent
+                    {
+                        ItemName = "Book",
+                        NumberOfUnits = 2
+                    });
+                    eventStore.Dispatch(new AddItemInCartEvent
+                    {
+                        ItemName = "Book",
+                        NumberOfUnits = 3
+                    });
+                    eventStore.Dispatch(new RemoveItemFromCartEvent
+                    {
+                        ItemName = "Book"
+                    });
+                }
+                if (choice == "2")
+                {
+                    // Remove Events database
+                    RemoveEventsDatabase();
+
+                    // Remove Views database
+                    RemoveViewsDatabase();
+                }
+                if (choice == "3")
+                {
+                    // Create Events database (if not exists)
+                    CreateEventsDatabase();
+
+                    // Create Views database (if not exists and different)
+                    CreateViewsDatabase(1);
+
+                    var events = GetEventsFromDatabase();
+
+                    // Create Event Store (Write model) and Event Views (Read model)
+                    var eventStore = new Database.CartEventStore();
+                    var eventsObservable = eventStore.ObserveEvent(); // get event stream to link event store and views
+
+                    var cartTableEventView = new Database.Version1.CartTableEventView(eventsObservable);
+
+                    if (events.Any())
+                    {
+                        // TODO : Clear Views database and replay Events (if any in database)
                     }
                     else
                     {
-                        Console.WriteLine($"Cart: {string.Join(", ", state.Items.Select(item => item.Key + " x" + item.Value))}");
+                        // Dispatch new events
+                        eventStore.Dispatch(new AddItemInCartEvent
+                        {
+                            ItemName = "Book"
+                        });
+                        eventStore.Dispatch(new AddItemInCartEvent
+                        {
+                            ItemName = "Car"
+                        });
+                        eventStore.Dispatch(new AddItemInCartEvent
+                        {
+                            ItemName = "Candy",
+                            NumberOfUnits = 12
+                        });
+                        eventStore.Dispatch(new ResetCartEvent());
+                        eventStore.Dispatch(new AddItemInCartEvent
+                        {
+                            ItemName = "Book",
+                            NumberOfUnits = 2
+                        });
+                        eventStore.Dispatch(new AddItemInCartEvent
+                        {
+                            ItemName = "Book",
+                            NumberOfUnits = 3
+                        });
+                        eventStore.Dispatch(new RemoveItemFromCartEvent
+                        {
+                            ItemName = "Book"
+                        });
                     }
-                });
 
-            // Dispatch events
-            eventStore.Dispatch(new AddItemInCartEvent
-            {
-                ItemName = "Book",
-                UnitCost = 45
-            });
-            eventStore.Dispatch(new AddItemInCartEvent
-            {
-                ItemName = "Car",
-                UnitCost = 14000
-            });
-            eventStore.Dispatch(new AddItemInCartEvent
-            {
-                ItemName = "Candy",
-                UnitCost = 0.8m,
-                NumberOfUnits = 12
-            });
-            eventStore.Dispatch(new ResetCartEvent());
-            eventStore.Dispatch(new AddItemInCartEvent
-            {
-                ItemName = "Book",
-                UnitCost = 30,
-                NumberOfUnits = 2
-            });
-            eventStore.Dispatch(new AddItemInCartEvent
-            {
-                ItemName = "Book",
-                UnitCost = 30,
-                NumberOfUnits = 3
-            });
-            eventStore.Dispatch(new RemoveItemFromCartEvent
-            {
-                ItemName = "Book",
-                UnitCost = 30
-            });
+                    // Get data from read model after all events are dispatched
+                    decimal totalCost = GetTotalCostInCart();
+                    Console.WriteLine($"Total cost: ${totalCost}");
 
-            Console.ReadLine();
-        }
-    }
-
-    public class CartEventStore : EventStore { }
-
-    public class TotalCostCartState
-    {
-        public decimal TotalCost { get; set; }
-    }
-    public class TotalCostCartEventView : EventView<TotalCostCartState>
-    {
-        public TotalCostCartEventView(IObservable<object> events) : base(events)
-        {
-        }
-
-        protected override TotalCostCartState Reduce(TotalCostCartState state, object @event)
-        {
-            if (@event is AddItemInCartEvent addItemInCartEvent)
-            {
-                return new TotalCostCartState
-                {
-                    TotalCost = state.TotalCost + (addItemInCartEvent.NumberOfUnits * addItemInCartEvent.UnitCost)
-                };
-            }
-            if (@event is RemoveItemFromCartEvent removeItemFromCartEvent)
-            {
-                return new TotalCostCartState
-                {
-                    TotalCost = state.TotalCost - removeItemFromCartEvent.UnitCost
-                };
-            }
-            if (@event is ResetCartEvent)
-            {
-                return new TotalCostCartState
-                {
-                    TotalCost = 0
-                };
-            }
-            return state;
-        }
-    }
-
-    public class OrdersCartState
-    {
-        public ImmutableDictionary<string, long> Items { get; set; } = ImmutableDictionary<string, long>.Empty;
-    }
-    public class OrdersCartEventView : EventView<OrdersCartState>
-    {
-        public OrdersCartEventView(IObservable<object> events) : base(events)
-        {
-        }
-
-        protected override OrdersCartState Reduce(OrdersCartState state, object @event)
-        {
-            if (@event is AddItemInCartEvent addItemInCartEvent)
-            {
-                if (state.Items.ContainsKey(addItemInCartEvent.ItemName))
-                {
-                    return new OrdersCartState
+                    var cartRows = GetCart();
+                    if (cartRows.Any())
                     {
-                        Items = state.Items.SetItem(addItemInCartEvent.ItemName, state.Items[addItemInCartEvent.ItemName] + addItemInCartEvent.NumberOfUnits)
-                    };
-                }
-                else
-                {
-                    return new OrdersCartState
+                        Console.WriteLine($"Cart: {string.Join(", ", cartRows.Select(item => item.ItemName + " x" + item.NumberOfUnits))}");
+                    }
+                    else
                     {
-                        Items = state.Items.Add(addItemInCartEvent.ItemName, addItemInCartEvent.NumberOfUnits)
-                    };
+                        Console.WriteLine("Cart: Empty");
+                    }
                 }
-            }
-            if (@event is RemoveItemFromCartEvent removeItemFromCartEvent)
-            {
-                return new OrdersCartState
+                if (choice == "4")
                 {
-                    Items = state.Items.SetItem(removeItemFromCartEvent.ItemName, state.Items[removeItemFromCartEvent.ItemName] - 1)
-                };
-            }
-            if (@event is ResetCartEvent)
-            {
-                return new OrdersCartState
+                    // TODO : Create Events database (if not exists)
+                    // TODO : Create Views database (if not exists and different)
+
+                    // TODO : Clear Views database and replay Events (if any in database)
+                    // TODO : Or store new events
+                }
+                if (choice == "5")
                 {
-                    Items = ImmutableDictionary<string, long>.Empty
-                };
+                    Environment.Exit(0);
+                }
+
+                Console.WriteLine(string.Empty);
+                Console.WriteLine("---");
             }
-            return state;
         }
-    }
-
-    public class AddItemInCartEvent
-    {
-        public string ItemName { get; set; }
-        public decimal UnitCost { get; set; }
-        public int NumberOfUnits { get; set; } = 1;
-    }
-
-    public class RemoveItemFromCartEvent
-    {
-        public string ItemName { get; set; }
-        public decimal UnitCost { get; set; }
-    }
-
-    public class ResetCartEvent
-    {
     }
 }

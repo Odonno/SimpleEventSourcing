@@ -6,8 +6,23 @@ namespace SimpleEventSourcing
 {
     /// <summary>
     /// The base class for creating Event View (Read Model of an Event Sourcing architecture).
+    /// This class does not contain a State and is mainly used to execute actions like updating a database after each event.
     /// </summary>
-    public abstract class EventView<TState> where TState : class, new()
+    public abstract class EventView
+    {
+        protected EventView(IObservable<object> events)
+        {
+            events.Subscribe(Handle);
+        }
+
+        protected abstract void Handle(object @event);
+    }
+
+    /// <summary>
+    /// The base class for creating Event View (Read Model of an Event Sourcing architecture).
+    /// The State is a real live-data updated whenever an observed event is pushed.
+    /// </summary>
+    public abstract class InMemoryEventView<TState> where TState : class, new()
     {
         private readonly Subject<TState> _stateSubject = new Subject<TState>();
 
@@ -17,11 +32,11 @@ namespace SimpleEventSourcing
         public TState State { get; private set; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="EventView{TState}"/> class.
+        /// Initializes a new instance of the <see cref="InMemoryEventView{TState}"/> class.
         /// </summary>
         /// <param name="events">The event stream to listen to in order to update the state.</param>
         /// <param name="initialState">The initial state to use in the view; if <c>null</c>, a default value is constructed using <c>new TState()</c>.</param>
-        protected EventView(IObservable<object> events, TState initialState = null)
+        protected InMemoryEventView(IObservable<object> events, TState initialState = null)
         {
             State = initialState ?? new TState();
 

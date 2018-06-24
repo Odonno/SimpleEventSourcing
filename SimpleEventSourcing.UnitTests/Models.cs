@@ -9,7 +9,7 @@ namespace SimpleEventSourcing.UnitTests
     {
         public decimal TotalCost { get; set; }
     }
-    public class TotalCostCartEventView : EventView<TotalCostCartState>
+    public class TotalCostCartEventView : InMemoryEventView<TotalCostCartState>
     {
         public TotalCostCartEventView(IObservable<object> events) : base(events)
         {
@@ -47,7 +47,7 @@ namespace SimpleEventSourcing.UnitTests
         public ImmutableDictionary<string, long> Items { get; set; } = ImmutableDictionary<string, long>.Empty;
         public int NumberOfItems { get; set; }
     }
-    public class OrdersCartEventView : EventView<OrdersCartState>
+    public class OrdersCartEventView : InMemoryEventView<OrdersCartState>
     {
         public OrdersCartEventView(IObservable<object> events) : base(events)
         {
