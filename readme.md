@@ -36,9 +36,7 @@ public class RemoveItemFromCartEvent
     public string ItemName { get; set; }
 }
 
-public class ResetCartEvent
-{
-}
+public class ResetCartEvent { }
 ```
 
 ### Write Model - Event Store
