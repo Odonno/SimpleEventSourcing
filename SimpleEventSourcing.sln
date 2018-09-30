@@ -5,11 +5,9 @@ VisualStudioVersion = 15.0.27703.2035
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing", "SimpleEventSourcing\SimpleEventSourcing.csproj", "{79FF39A6-846F-43D5-A4C4-6FC6F556D7E2}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples", "SimpleEventSourcing.Samples\SimpleEventSourcing.Samples.csproj", "{48E789AC-63C3-4339-B17B-02F9AC51AE17}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.UnitTests", "SimpleEventSourcing.UnitTests\SimpleEventSourcing.UnitTests.csproj", "{B2C658DC-9B92-4B75-8BBE-3863E5DECCFA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SimpleEventSourcing.Samples.Web", "SimpleEventSourcing.Samples.Web\SimpleEventSourcing.Samples.Web.csproj", "{BCACC13B-108C-4BAB-BB8C-82961990A34E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples.Web", "SimpleEventSourcing.Samples.Web\SimpleEventSourcing.Samples.Web.csproj", "{BCACC13B-108C-4BAB-BB8C-82961990A34E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,10 +19,6 @@ Global
 		{79FF39A6-846F-43D5-A4C4-6FC6F556D7E2}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{79FF39A6-846F-43D5-A4C4-6FC6F556D7E2}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{79FF39A6-846F-43D5-A4C4-6FC6F556D7E2}.Release|Any CPU.Build.0 = Release|Any CPU
-		{48E789AC-63C3-4339-B17B-02F9AC51AE17}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{48E789AC-63C3-4339-B17B-02F9AC51AE17}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{48E789AC-63C3-4339-B17B-02F9AC51AE17}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{48E789AC-63C3-4339-B17B-02F9AC51AE17}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B2C658DC-9B92-4B75-8BBE-3863E5DECCFA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B2C658DC-9B92-4B75-8BBE-3863E5DECCFA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B2C658DC-9B92-4B75-8BBE-3863E5DECCFA}.Release|Any CPU.ActiveCfg = Release|Any CPU
