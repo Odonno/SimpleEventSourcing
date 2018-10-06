@@ -20,7 +20,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
             return _updatedEntitySubject.DistinctUntilChanged();
         }
 
-        protected override void Handle(object @event)
+        protected override void Handle(object @event, bool replayed = false)
         {
             if (@event is CreateItemEvent createItemEvent)
             {
@@ -38,13 +38,16 @@ namespace SimpleEventSourcing.Samples.Web.Database
                     )
                     .Single();
 
-                    _updatedEntitySubject.OnNext(new Item
+                    if (!replayed)
                     {
-                        Id = newItem.Id,
-                        Name = newItem.Name,
-                        Price = Convert.ToDecimal(newItem.Price),
-                        RemainingQuantity = newItem.RemainingQuantity,
-                    });
+                        _updatedEntitySubject.OnNext(new Item
+                        {
+                            Id = newItem.Id,
+                            Name = newItem.Name,
+                            Price = Convert.ToDecimal(newItem.Price),
+                            RemainingQuantity = newItem.RemainingQuantity,
+                        });
+                    }
                 }
             }
             if (@event is UpdateItemPriceEvent updateItemPriceEvent)
@@ -63,13 +66,16 @@ namespace SimpleEventSourcing.Samples.Web.Database
                     )
                     .Single();
 
-                    _updatedEntitySubject.OnNext(new Item
+                    if (!replayed)
                     {
-                        Id = updatedItem.Id,
-                        Name = updatedItem.Name,
-                        Price = Convert.ToDecimal(updatedItem.Price),
-                        RemainingQuantity = updatedItem.RemainingQuantity,
-                    });
+                        _updatedEntitySubject.OnNext(new Item
+                        {
+                            Id = updatedItem.Id,
+                            Name = updatedItem.Name,
+                            Price = Convert.ToDecimal(updatedItem.Price),
+                            RemainingQuantity = updatedItem.RemainingQuantity,
+                        });
+                    }
                 }
             }
             if (@event is SupplyItemEvent supplyItemEvent)
@@ -88,13 +94,16 @@ namespace SimpleEventSourcing.Samples.Web.Database
                     )
                     .Single();
 
-                    _updatedEntitySubject.OnNext(new Item
+                    if (!replayed)
                     {
-                        Id = updatedItem.Id,
-                        Name = updatedItem.Name,
-                        Price = Convert.ToDecimal(updatedItem.Price),
-                        RemainingQuantity = updatedItem.RemainingQuantity,
-                    });
+                        _updatedEntitySubject.OnNext(new Item
+                        {
+                            Id = updatedItem.Id,
+                            Name = updatedItem.Name,
+                            Price = Convert.ToDecimal(updatedItem.Price),
+                            RemainingQuantity = updatedItem.RemainingQuantity,
+                        });
+                    }
                 }
             }
             if (@event is ValidateOrderEvent validateOrderEvent)
@@ -113,15 +122,18 @@ namespace SimpleEventSourcing.Samples.Web.Database
                     )
                     .ToList();
 
-                    foreach (var updatedItem in updatedItems)
+                    if (!replayed)
                     {
-                        _updatedEntitySubject.OnNext(new Item
+                        foreach (var updatedItem in updatedItems)
                         {
-                            Id = updatedItem.Id,
-                            Name = updatedItem.Name,
-                            Price = Convert.ToDecimal(updatedItem.Price),
-                            RemainingQuantity = updatedItem.RemainingQuantity,
-                        });
+                            _updatedEntitySubject.OnNext(new Item
+                            {
+                                Id = updatedItem.Id,
+                                Name = updatedItem.Name,
+                                Price = Convert.ToDecimal(updatedItem.Price),
+                                RemainingQuantity = updatedItem.RemainingQuantity,
+                            });
+                        }
                     }
                 }
             }

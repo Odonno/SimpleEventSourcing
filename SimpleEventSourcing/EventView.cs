@@ -13,15 +13,27 @@ namespace SimpleEventSourcing
     {
         protected EventView(IObservable<object> events)
         {
-            events.Subscribe(Handle);
+            events.Subscribe(@event => Handle(@event));
         }
 
+        /// <summary>
+        /// Replay a single event.
+        /// </summary>
+        /// <param name="event">The event to replay.</param>
+        public virtual void Replay(object @event)
+        {
+            Handle(@event, true);
+        }
+        /// <summary>
+        /// Replay a set of events.
+        /// </summary>
+        /// <param name="events">The list of events to replay.</param>
         public virtual void Replay(IEnumerable<object> events)
         {
-            events.ToObservable().Subscribe(Handle);
+            events.ToObservable().Subscribe(Replay);
         }
 
-        protected abstract void Handle(object @event);
+        protected abstract void Handle(object @event, bool replayed = false);
     }
 
     /// <summary>

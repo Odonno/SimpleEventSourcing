@@ -33,6 +33,7 @@ namespace SimpleEventSourcing.Samples.Web
         public void Configure(
             IApplicationBuilder app, 
             IHostingEnvironment env,
+            IHubContext<CartHub> cartHubContext,
             IHubContext<OrderHub> orderHubContext,
             IHubContext<ItemHub> itemHubContext,
             IHubContext<EventHub> eventHubContext)
@@ -61,6 +62,7 @@ namespace SimpleEventSourcing.Samples.Web
 
             app.UseSignalR(routes =>
             {
+                routes.MapHub<CartHub>("/cart");
                 routes.MapHub<OrderHub>("/order");
                 routes.MapHub<ItemHub>("/item");
                 routes.MapHub<EventHub>("/event");
@@ -79,6 +81,11 @@ namespace SimpleEventSourcing.Samples.Web
             OrderEventView.ObserveEntityChange().Subscribe(async order =>
             {
                 await orderHubContext.Clients.All.SendAsync("Sync", order);
+            });
+
+            CartEventView.ObserveEntityChange().Subscribe(async itemAndQuantity =>
+            {
+                await cartHubContext.Clients.All.SendAsync("Sync", itemAndQuantity);
             });
 
             ItemEventView.ObserveEntityChange().Subscribe(async item =>

@@ -20,7 +20,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
             return _updatedEntitySubject.DistinctUntilChanged();
         }
 
-        protected override void Handle(object @event)
+        protected override void Handle(object @event, bool replayed = false)
         {
             if (@event is CreateOrderFromCartEvent createOrderFromCartEvent)
             {
@@ -69,24 +69,27 @@ namespace SimpleEventSourcing.Samples.Web.Database
                     )
                     .ToList();
 
-                    _updatedEntitySubject.OnNext(new Order
+                    if (!replayed)
                     {
-                        Id = newOrder.Id,
-                        CreatedDate = newOrder.CreatedDate,
-                        Number = newOrder.Number,
-                        IsConfirmed = newOrder.IsConfirmed,
-                        IsCanceled = newOrder.IsCanceled,
-                        Items = newOrderedItems
-                            .Select(i =>
-                            {
-                                return new ItemAndPriceAndQuantity
+                        _updatedEntitySubject.OnNext(new Order
+                        {
+                            Id = newOrder.Id,
+                            CreatedDate = newOrder.CreatedDate,
+                            Number = newOrder.Number,
+                            IsConfirmed = newOrder.IsConfirmed,
+                            IsCanceled = newOrder.IsCanceled,
+                            Items = newOrderedItems
+                                .Select(i =>
                                 {
-                                    ItemId = i.ItemId,
-                                    Price = Convert.ToDecimal(i.Price),
-                                    Quantity = i.Quantity
-                                };
-                            })
-                    });
+                                    return new ItemAndPriceAndQuantity
+                                    {
+                                        ItemId = i.ItemId,
+                                        Price = Convert.ToDecimal(i.Price),
+                                        Quantity = i.Quantity
+                                    };
+                                })
+                        });
+                    }
                 }
             }
             if (@event is ValidateOrderEvent validateOrderEvent)
@@ -113,24 +116,27 @@ namespace SimpleEventSourcing.Samples.Web.Database
                     )
                     .ToList();
 
-                    _updatedEntitySubject.OnNext(new Order
+                    if (!replayed)
                     {
-                        Id = order.Id,
-                        CreatedDate = order.CreatedDate,
-                        Number = order.Number,
-                        IsConfirmed = order.IsConfirmed,
-                        IsCanceled = order.IsCanceled,
-                        Items = orderedItems
-                            .Select(i =>
-                            {
-                                return new ItemAndPriceAndQuantity
+                        _updatedEntitySubject.OnNext(new Order
+                        {
+                            Id = order.Id,
+                            CreatedDate = order.CreatedDate,
+                            Number = order.Number,
+                            IsConfirmed = order.IsConfirmed,
+                            IsCanceled = order.IsCanceled,
+                            Items = orderedItems
+                                .Select(i =>
                                 {
-                                    ItemId = i.ItemId,
-                                    Price = Convert.ToDecimal(i.Price),
-                                    Quantity = i.Quantity
-                                };
-                            })
-                    });
+                                    return new ItemAndPriceAndQuantity
+                                    {
+                                        ItemId = i.ItemId,
+                                        Price = Convert.ToDecimal(i.Price),
+                                        Quantity = i.Quantity
+                                    };
+                                })
+                        });
+                    }
                 }
             }
             if (@event is CancelOrderEvent cancelOrderEvent)
@@ -157,24 +163,27 @@ namespace SimpleEventSourcing.Samples.Web.Database
                     )
                     .ToList();
 
-                    _updatedEntitySubject.OnNext(new Order
+                    if (!replayed)
                     {
-                        Id = order.Id,
-                        CreatedDate = order.CreatedDate,
-                        Number = order.Number,
-                        IsConfirmed = order.IsConfirmed,
-                        IsCanceled = order.IsCanceled,
-                        Items = orderedItems
-                            .Select(i =>
-                            {
-                                return new ItemAndPriceAndQuantity
+                        _updatedEntitySubject.OnNext(new Order
+                        {
+                            Id = order.Id,
+                            CreatedDate = order.CreatedDate,
+                            Number = order.Number,
+                            IsConfirmed = order.IsConfirmed,
+                            IsCanceled = order.IsCanceled,
+                            Items = orderedItems
+                                .Select(i =>
                                 {
-                                    ItemId = i.ItemId,
-                                    Price = Convert.ToDecimal(i.Price),
-                                    Quantity = i.Quantity
-                                };
-                            })
-                    });
+                                    return new ItemAndPriceAndQuantity
+                                    {
+                                        ItemId = i.ItemId,
+                                        Price = Convert.ToDecimal(i.Price),
+                                        Quantity = i.Quantity
+                                    };
+                                })
+                        });
+                    }
                 }
             }
         }

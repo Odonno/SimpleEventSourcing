@@ -84,16 +84,15 @@ In this particular form of `EventView`, from an event you get a new state immedi
 
 #### Persistent view
 
-This other form of `EventView` gives you the ability to override the `Handle` in which you can update a specific part of your data like a Table in a relational database.
+This other form of `EventView` gives you the ability to override the `Handle` method in which you can update a specific part of your data like a Table in a relational database.
 
 ```csharp
 public abstract class EventView
 {
     protected EventView(IObservable<object> events) { }
 
+    public virtual void Replay(object @event);
     public virtual void Replay(IEnumerable<object> events);
-
-    protected abstract void Handle(object @event);
 }
 ```
 

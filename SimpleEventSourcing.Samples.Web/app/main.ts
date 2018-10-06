@@ -136,6 +136,11 @@ type ResetCartFailedAction = {
     error: any
 };
 
+type UpsertCartAction = {
+    type: "SHOP_UPSERT",
+    itemAndQuantity: { itemId: number, quantity: number }
+};
+
 type ValidateOrderStartedAction = {
     type: "ORDER_VALIDATE_STARTED",
     payload: { orderId: number }
@@ -212,6 +217,17 @@ type AddEventAction = {
     event: Event
 };
 
+type ReplayEventsStartedAction = {
+    type: "EVENT_REPLAY_STARTED"
+};
+type ReplayEventsSucceedAction = {
+    type: "EVENT_REPLAY_SUCCEED"
+};
+type ReplayEventsFailedAction = {
+    type: "EVENT_REPLAY_FAILED",
+    error: any
+};
+
 type AppAction =
     ChangePageAction | UpdateSearchAction
     | UpdateFormAction | ClearFormAction
@@ -221,9 +237,10 @@ type ShopAction =
     AddItemInCartStartedAction | AddItemInCartSucceedAction | AddItemInCartFailedAction
     | RemoveItemFromCartStartedAction | RemoveItemFromCartSucceedAction | RemoveItemFromCartFailedAction
     | OrderStartedAction | OrderSucceedAction | OrderFailedAction
-    | ResetCartStartedAction | ResetCartSucceedAction | ResetCartFailedAction;
+    | ResetCartStartedAction | ResetCartSucceedAction | ResetCartFailedAction
+    | UpsertCartAction;
 
-type OrdersAction = 
+type OrdersAction =
     ValidateOrderStartedAction | ValidateOrderSucceedAction | ValidateOrderFailedAction
     | CancelOrderStartedAction | CancelOrderSucceedAction | CancelOrderFailedAction
     | UpsertOrderAction;
@@ -235,7 +252,8 @@ type InventoryAction =
     | UpsertItemAction;
 
 type EventAction =
-    AddEventAction;
+    AddEventAction
+    | ReplayEventsStartedAction | ReplayEventsSucceedAction | ReplayEventsFailedAction;
 
 type Action =
     AppAction
@@ -284,7 +302,9 @@ const actionsCreator = {
             started: () => <ResetCartStartedAction>({ type: "SHOP_RESET_CART_STARTED" }),
             succeed: () => <ResetCartSucceedAction>({ type: "SHOP_RESET_CART_SUCCEED" }),
             failed: (error: any) => <ResetCartFailedAction>({ type: "SHOP_RESET_CART_FAILED", error })
-        }
+        },
+        upsert: (itemAndQuantity: { quantity: number, itemId: number }) =>
+            <UpsertCartAction>({ type: "SHOP_UPSERT", itemAndQuantity })
     },
     orders: {
         validate: {
@@ -320,7 +340,12 @@ const actionsCreator = {
         upsert: (item: Item) => <UpsertItemAction>({ type: "INVENTORY_UPSERT_ITEM", item })
     },
     events: {
-        add: (event: Event) => <AddEventAction>({ type: "EVENT_ADD", event })
+        add: (event: Event) => <AddEventAction>({ type: "EVENT_ADD", event }),
+        replay: {
+            started: () => <ReplayEventsStartedAction>({ type: "EVENT_REPLAY_STARTED" }),
+            succeed: () => <ReplayEventsSucceedAction>({ type: "EVENT_REPLAY_SUCCEED" }),
+            failed: (error: any) => <ReplayEventsFailedAction>({ type: "EVENT_REPLAY_FAILED", error })
+        }
     }
 };
 
@@ -352,7 +377,8 @@ type State = {
         },
         updatePrice: { [itemId: number]: { price: FormPropertyState<number> } },
         supply: { [itemId: number]: { quantity: FormPropertyState<number> } }
-    }
+    },
+    previousState: any | undefined
 };
 
 const initialState: State = {
@@ -380,7 +406,8 @@ const initialState: State = {
         },
         updatePrice: [],
         supply: []
-    }
+    },
+    previousState: undefined
 };
 
 const reduce = (state: State, action: Action): State => {
@@ -586,60 +613,6 @@ const reduce = (state: State, action: Action): State => {
             }
         };
     }
-    if (action.type === "SHOP_ADD_ITEM_IN_CART_SUCCEED") {
-        const existingItemInCart = state.cart.items.filter(i => i.itemId === action.payload.itemId)[0];
-        if (existingItemInCart) {
-            return {
-                ...state,
-                cart: {
-                    ...state.cart,
-                    items: state.cart.items.map(item => {
-                        if (item.itemId === action.payload.itemId) {
-                            return { ...item, quantity: item.quantity + action.payload.quantity };
-                        }
-                        return item;
-                    })
-                }
-            };
-        }
-
-        return {
-            ...state,
-            cart: {
-                ...state.cart,
-                items: [...state.cart.items, action.payload]
-            }
-        };
-    }
-    if (action.type === "SHOP_REMOVE_ITEM_FROM_CART_SUCCEED") {
-        const existingItemInCart = state.cart.items.filter(i => i.itemId === action.payload.itemId)[0];
-        if (existingItemInCart) {
-            if (action.payload.quantity >= existingItemInCart.quantity) {
-                return {
-                    ...state,
-                    cart: {
-                        ...state.cart,
-                        items: state.cart.items.filter(item => item.itemId !== action.payload.itemId)
-                    }
-                };
-            }
-
-            return {
-                ...state,
-                cart: {
-                    ...state.cart,
-                    items: state.cart.items.map(item => {
-                        if (item.itemId === action.payload.itemId) {
-                            return { ...item, quantity: item.quantity - action.payload.quantity };
-                        }
-                        return item;
-                    })
-                }
-            };
-        }
-
-        return state;
-    }
     if (action.type === "SHOP_RESET_CART_SUCCEED") {
         return {
             ...state,
@@ -651,6 +624,41 @@ const reduce = (state: State, action: Action): State => {
             ...state,
             cart: { ...initialState.cart }
         };
+    }
+    if (action.type === "SHOP_UPSERT") {
+        const isNew = state.cart.items.filter(i => i.itemId === action.itemAndQuantity.itemId).length <= 0;
+        const toRemove = action.itemAndQuantity.quantity === 0;
+
+        if (toRemove) {
+            return {
+                ...state,
+                cart: {
+                    ...state.cart,
+                    items: state.cart.items.filter(i => i.itemId !== action.itemAndQuantity.itemId)
+                }
+            };
+        } else if (isNew) {
+            return {
+                ...state,
+                cart: {
+                    ...state.cart,
+                    items: [...state.cart.items, action.itemAndQuantity]
+                }
+            };
+        } else {
+            return {
+                ...state,
+                cart: {
+                    ...state.cart,
+                    items: state.cart.items.map(i => {
+                        if (i.itemId === action.itemAndQuantity.itemId) {
+                            return action.itemAndQuantity;
+                        }
+                        return i;
+                    })
+                }
+            };
+        }
     }
     if (action.type === "ORDER_UPSERT") {
         const isNew = state.orders.filter(order => order.id === action.order.id).length <= 0;
@@ -729,6 +737,21 @@ const reduce = (state: State, action: Action): State => {
             ...state,
             events: [...state.events, action.event]
         }
+    }
+    if (action.type === "EVENT_REPLAY_STARTED") {
+        return {
+            ...initialState,
+            previousState: state
+        };
+    }
+    if (action.type === "EVENT_REPLAY_SUCCEED") {
+        return {
+            ...state,
+            previousState: undefined
+        };
+    }
+    if (action.type === "EVENT_REPLAY_FAILED") {
+        return state.previousState;
     }
     return state;
 };
@@ -1020,7 +1043,7 @@ const ordersComponent$ = combineLatest(ordersChange$, itemsChange$).pipe(
                         return false;
                     });
 
-                    return h("div",  { className: "card", key: order.id.toString(), style: { marginBottom: '10px' } }, [
+                    return h("div", { className: "card", key: order.id.toString(), style: { marginBottom: '10px' } }, [
                         h("div", { className: "card-header" }, [
                             h("div", { className: "card-header-title" }, [
                                 "Order #" + order.number
@@ -1029,47 +1052,47 @@ const ordersComponent$ = combineLatest(ordersChange$, itemsChange$).pipe(
                         h("div", {
                             className: "card-content"
                         }, [
-                            h("div", {}, [
-                                order.items.map(itemOrdered => {
-                                    const item = items.filter(i => i.id === itemOrdered.itemId)[0]; 
-                                    
-                                    if (item) {
-                                        const missingQuantity = itemOrdered.quantity - item.remainingQuantity;
+                                h("div", {}, [
+                                    order.items.map(itemOrdered => {
+                                        const item = items.filter(i => i.id === itemOrdered.itemId)[0];
 
-                                        return h("div", {}, [
-                                            h("span", {}, [item.name]),
-                                            h("span", { style: { fontSize: '12px' } }, [" x" + itemOrdered.quantity]),
-                                            missingQuantity > 0 ? 
-                                                h("span", { style: { fontSize: '12px' }, className: "has-text-danger" }, [" (" + missingQuantity + " missing)"]) 
-                                                : null
-                                        ]);
-                                    }
-                                    return h("div", []);
-                                })
-                            ]),
-                            h("div", { style: { marginTop: '10px', fontSize: '12px' } }, [
-                                "Total: " + totalPrice + " €"
-                            ]),
-                            h("div", { style: { marginTop: '10px' } }, [
-                                (!order.isConfirmed && !order.isCanceled) ? h("button", {
-                                    className: "button is-rounded is-primary is-outlined",
-                                    style: { fontSize: '12px' },
-                                    disabled: !canOrder,
-                                    onclick: () => dispatch(actionsCreator.orders.validate.started({
-                                        orderId: order.id
-                                    }))
-                                }, ["validate order"]) : null,
-                                (!order.isConfirmed && !order.isCanceled) ? h("button", {
-                                    className: "button is-rounded is-danger is-outlined",
-                                    style: { fontSize: '12px', marginLeft: '10px' },
-                                    onclick: () => dispatch(actionsCreator.orders.cancel.started({
-                                        orderId: order.id
-                                    }))
-                                }, ["cancel order"]) : null,
-                                order.isConfirmed ? h("div", {}, ["order confirmed"]) : null,
-                                order.isCanceled ? h("div", {}, ["order canceled"]) : null
+                                        if (item) {
+                                            const missingQuantity = itemOrdered.quantity - item.remainingQuantity;
+
+                                            return h("div", {}, [
+                                                h("span", {}, [item.name]),
+                                                h("span", { style: { fontSize: '12px' } }, [" x" + itemOrdered.quantity]),
+                                                missingQuantity > 0 ?
+                                                    h("span", { style: { fontSize: '12px' }, className: "has-text-danger" }, [" (" + missingQuantity + " missing)"])
+                                                    : null
+                                            ]);
+                                        }
+                                        return h("div", []);
+                                    })
+                                ]),
+                                h("div", { style: { marginTop: '10px', fontSize: '12px' } }, [
+                                    "Total: " + totalPrice + " €"
+                                ]),
+                                h("div", { style: { marginTop: '10px' } }, [
+                                    (!order.isConfirmed && !order.isCanceled) ? h("button", {
+                                        className: "button is-rounded is-primary is-outlined",
+                                        style: { fontSize: '12px' },
+                                        disabled: !canOrder,
+                                        onclick: () => dispatch(actionsCreator.orders.validate.started({
+                                            orderId: order.id
+                                        }))
+                                    }, ["validate order"]) : null,
+                                    (!order.isConfirmed && !order.isCanceled) ? h("button", {
+                                        className: "button is-rounded is-danger is-outlined",
+                                        style: { fontSize: '12px', marginLeft: '10px' },
+                                        onclick: () => dispatch(actionsCreator.orders.cancel.started({
+                                            orderId: order.id
+                                        }))
+                                    }, ["cancel order"]) : null,
+                                    order.isConfirmed ? h("div", {}, ["order confirmed"]) : null,
+                                    order.isCanceled ? h("div", {}, ["order canceled"]) : null
+                                ])
                             ])
-                        ])
                     ]);
                 })
             ])
@@ -1181,7 +1204,7 @@ const itemListComponent$ = combineLatest(itemsChange$, updatePriceFormsChanged$,
                 items.map(item => {
                     const supplyForm = supplyForms[item.id];
                     const updatePriceForm = updatePriceForms[item.id];
-                    
+
                     return h("div", { className: "card", key: item.id.toString(), style: { marginBottom: '10px' } }, [
                         h("div", { className: "card-header" }, [
                             h("div", { className: "card-header-title" }, [
@@ -1191,61 +1214,61 @@ const itemListComponent$ = combineLatest(itemsChange$, updatePriceFormsChanged$,
                         h("div", {
                             className: "card-content"
                         }, [
-                            h("div", { className: "columns" }, [
-                                h("div", { className: "column" }, [
-                                    h("div", [
-                                        item.price + " €"
+                                h("div", { className: "columns" }, [
+                                    h("div", { className: "column" }, [
+                                        h("div", [
+                                            item.price + " €"
+                                        ]),
+                                        h("div", [
+                                            "Stock: " + item.remainingQuantity
+                                        ])
                                     ]),
-                                    h("div", [
-                                        "Stock: " + item.remainingQuantity
-                                    ])
-                                ]),
-                                h("div", {
-                                    className: "column has-background-white-bis",
-                                    style: { display: "flex", alignItems: "center" }
-                                }, [
-                                    h("input", {
-                                        className: "input",
-                                        style: { width: '200px' },
-                                        type: "text",
-                                        placeholder: "New price",
-                                        value: updatePriceForm ? updatePriceForm.price.value : "",
-                                        onkeyup: (e: KeyboardEvent) => dispatch(actionsCreator.app.updateForm("updatePrice", "price", (<HTMLInputElement>(e.target)).value, { itemId: item.id }))
-                                    }, []),
-                                    h("button", {
-                                        disabled: !(updatePriceForm && !isNaN(updatePriceForm.price.value) && updatePriceForm.price.value != item.price),
-                                        className: "button is-rounded is-default is-outlined",
-                                        style: { fontSize: '12px', marginLeft: '10px' },
-                                        onclick: () => dispatch(actionsCreator.inventory.updatePrice.started({
-                                            itemId: item.id,
-                                            newPrice: updatePriceForm.price.value
-                                        }))
-                                    }, ["update price"])
-                                ]),
-                                h("div", {
-                                    className: "column has-background-white-ter",
-                                    style: { display: "flex", alignItems: "center" }
-                                }, [
-                                    h("input", {
-                                        className: "input",
-                                        style: { width: '150px' },
-                                        type: "text",
-                                        placeholder: "Supply quantity",
-                                        value: supplyForm ? supplyForm.quantity.value : "",
-                                        onkeyup: (e: KeyboardEvent) => dispatch(actionsCreator.app.updateForm("supply", "quantity", (<HTMLInputElement>(e.target)).value, { itemId: item.id }))
-                                    }, []),
-                                    h("button", {
-                                        disabled: !(supplyForm && !isNaN(supplyForm.quantity.value) && supplyForm.quantity.value > 0),
-                                        className: "button is-rounded is-default is-outlined",
-                                        style: { fontSize: '12px', marginLeft: '10px' },
-                                        onclick: () => dispatch(actionsCreator.inventory.supply.started({
-                                            itemId: item.id,
-                                            quantity: supplyForm.quantity.value
-                                        }))
-                                    }, ["supply"])
+                                    h("div", {
+                                        className: "column has-background-white-bis",
+                                        style: { display: "flex", alignItems: "center" }
+                                    }, [
+                                            h("input", {
+                                                className: "input",
+                                                style: { width: '200px' },
+                                                type: "text",
+                                                placeholder: "New price",
+                                                value: updatePriceForm ? updatePriceForm.price.value : "",
+                                                onkeyup: (e: KeyboardEvent) => dispatch(actionsCreator.app.updateForm("updatePrice", "price", (<HTMLInputElement>(e.target)).value, { itemId: item.id }))
+                                            }, []),
+                                            h("button", {
+                                                disabled: !(updatePriceForm && !isNaN(updatePriceForm.price.value) && updatePriceForm.price.value != item.price),
+                                                className: "button is-rounded is-default is-outlined",
+                                                style: { fontSize: '12px', marginLeft: '10px' },
+                                                onclick: () => dispatch(actionsCreator.inventory.updatePrice.started({
+                                                    itemId: item.id,
+                                                    newPrice: updatePriceForm.price.value
+                                                }))
+                                            }, ["update price"])
+                                        ]),
+                                    h("div", {
+                                        className: "column has-background-white-ter",
+                                        style: { display: "flex", alignItems: "center" }
+                                    }, [
+                                            h("input", {
+                                                className: "input",
+                                                style: { width: '150px' },
+                                                type: "text",
+                                                placeholder: "Supply quantity",
+                                                value: supplyForm ? supplyForm.quantity.value : "",
+                                                onkeyup: (e: KeyboardEvent) => dispatch(actionsCreator.app.updateForm("supply", "quantity", (<HTMLInputElement>(e.target)).value, { itemId: item.id }))
+                                            }, []),
+                                            h("button", {
+                                                disabled: !(supplyForm && !isNaN(supplyForm.quantity.value) && supplyForm.quantity.value > 0),
+                                                className: "button is-rounded is-default is-outlined",
+                                                style: { fontSize: '12px', marginLeft: '10px' },
+                                                onclick: () => dispatch(actionsCreator.inventory.supply.started({
+                                                    itemId: item.id,
+                                                    quantity: supplyForm.quantity.value
+                                                }))
+                                            }, ["supply"])
+                                        ])
                                 ])
                             ])
-                        ])
                     ]);
                 })
             )
@@ -1278,20 +1301,27 @@ const eventsComponent$ = eventsChange$.pipe(
         }
 
         return h("section", {}, [
-            h("div", { className: "container" }, events.sort((a, b) => b.id - a.id).map(event => {
-                return h("div", { className: "card", key: event.id.toString(), style: { marginBottom: '10px' } }, [
-                    h("div", { className: "card-header" }, [
-                        h("div", { className: "card-header-title" }, [
-                            "Event #" + event.id + " - " + event.eventName
+            h("div", { className: "container" }, [
+                h("button", {
+                    className: "button is-rounded is-primary is-outlined",
+                    style: { marginBottom: "20px" },
+                    onclick: () => dispatch(actionsCreator.events.replay.started())
+                }, ["replay all events"]),
+                ...events.sort((a, b) => b.id - a.id).map(event => {
+                    return h("div", { className: "card", key: event.id.toString(), style: { marginBottom: '10px' } }, [
+                        h("div", { className: "card-header" }, [
+                            h("div", { className: "card-header-title" }, [
+                                "Event #" + event.id + " - " + event.eventName
+                            ])
+                        ]),
+                        h("div", { className: "card-content" }, [
+                            h("div", [
+                                JSON.stringify(JSON.parse(event.data), null, 4)
+                            ])
                         ])
-                    ]),
-                    h("div", { className: "card-content" }, [
-                        h("div", [
-                            JSON.stringify(JSON.parse(event.data), null, 4)
-                        ])
-                    ])
-                ]);
-            }))
+                    ]);
+                })
+            ])
         ]);
     })
 );
@@ -1438,6 +1468,16 @@ const supplyItemEpic$ = action$.pipe(
     )
 );
 
+const replayEventsEpic$ = action$.pipe(
+    ofType("EVENT_REPLAY_STARTED"),
+    mergeMap(_ =>
+        ajax.post("api/event/replay", null).pipe(
+            map(_ => actionsCreator.events.replay.succeed()),
+            catchError(error => of(actionsCreator.events.replay.failed(error)))
+        )
+    )
+);
+
 const epics: Observable<Action>[] = [
     loadAppEpic$,
     addItemInCartEpic$,
@@ -1449,7 +1489,8 @@ const epics: Observable<Action>[] = [
     createItemEpic$,
     createItemSucceedEpic$,
     updateItemPriceEpic$,
-    supplyItemEpic$
+    supplyItemEpic$,
+    replayEventsEpic$
 ];
 
 merge(...epics).subscribe(dispatch);
@@ -1460,6 +1501,14 @@ eventConnection.on("Sync", event => {
     dispatch(actionsCreator.events.add(event));
 });
 eventConnection.start().catch(error => {
+    return console.error(error.toString());
+});
+
+const cartConnection = new HubConnectionBuilder().withUrl("/cart").build();
+cartConnection.on("Sync", itemAndQuantity => {
+    dispatch(actionsCreator.shop.upsert(itemAndQuantity));
+});
+cartConnection.start().catch(error => {
     return console.error(error.toString());
 });
 
