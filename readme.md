@@ -2,6 +2,8 @@
 
 # Simple Event Sourcing
 
+[![NuGet](https://img.shields.io/nuget/v/Simple.EventSourcing.svg)](https://www.nuget.org/packages/Simple.EventSourcing/)
+
 > Event Sourcing made simple using Reactive Extensions
 
 Simple Event Sourcing is a .NET library based on the Event Sourcing architecture. This library is written with Rx.NET and built with the *minimum of code* you need to create event sourced application.
