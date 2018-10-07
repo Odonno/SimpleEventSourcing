@@ -1,3 +1,5 @@
+![./images/logo.png](./images/logo.png)
+
 # Simple Event Sourcing
 
 > Event Sourcing made simple using Reactive Extensions
