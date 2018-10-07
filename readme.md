@@ -1,4 +1,4 @@
-![./images/logo.png](./images/logo.png)
+![./images/logo-large.png](./images/logo-large.png)
 
 # Simple Event Sourcing
 
