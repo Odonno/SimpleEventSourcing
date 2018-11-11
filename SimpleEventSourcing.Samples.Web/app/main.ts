@@ -46,10 +46,13 @@ type Order = {
 };
 
 type Event = {
-    id: number;
+    id?: number | undefined;
     eventName: string;
-    createdDate: Date;
     data: any;
+    metadata: {
+        createdDate: Date,
+        correlationId?: string | undefined
+    };
 };
 
 // actions/events
@@ -1307,6 +1310,7 @@ const eventsComponent$ = eventsChange$.pipe(
                     style: { marginBottom: "20px" },
                     onclick: () => dispatch(actionsCreator.events.replay.started())
                 }, ["replay all events"]),
+                // TODO : sort by created date
                 ...events.sort((a, b) => b.id - a.id).map(event => {
                     return h("div", { className: "card", key: event.id.toString(), style: { marginBottom: '10px' } }, [
                         h("div", { className: "card-header" }, [
@@ -1407,7 +1411,7 @@ const resetCartEpic$ = action$.pipe(
 const orderEpic$ = action$.pipe(
     ofType("SHOP_ORDER_STARTED"),
     mergeMap(_ =>
-        ajax.post("api/shop/order", { date: new Date() }).pipe(
+        ajax.post("api/shop/order", null).pipe(
             map(_ => actionsCreator.shop.order.succeed()),
             catchError(error => of(actionsCreator.shop.order.failed(error)))
         )

@@ -3,15 +3,15 @@ using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using static SimpleEventSourcing.Samples.Web.DatabaseConfiguration;
+using static SimpleEventSourcing.Samples.Web.Database.Configuration;
 
 namespace SimpleEventSourcing.Samples.Web.Database
 {
-    public class ItemEventView : EventView
+    public class ItemEventView : EventView<SimpleEvent>
     {
         private readonly Subject<Item> _updatedEntitySubject = new Subject<Item>();
 
-        public ItemEventView(IObservable<object> events) : base(events)
+        public ItemEventView(IObservable<SimpleEvent> events) : base(events)
         {
         }
 
@@ -20,10 +20,12 @@ namespace SimpleEventSourcing.Samples.Web.Database
             return _updatedEntitySubject.DistinctUntilChanged();
         }
 
-        protected override void Handle(object @event, bool replayed = false)
+        protected override void Handle(SimpleEvent @event, bool replayed = false)
         {
-            if (@event is CreateItemEvent createItemEvent)
+            if (@event.EventName == nameof(ItemRegistered))
             {
+                var data = @event.Data as ItemRegistered;
+
                 using (var connection = GetViewsDatabaseConnection())
                 {
                     var newItem = connection.Query<ItemDbo>(
@@ -34,7 +36,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
 
                         SELECT * FROM [Item] ORDER BY [Id] DESC LIMIT 1;
                         ",
-                        new { createItemEvent.Name, createItemEvent.Price, createItemEvent.InitialQuantity }
+                        new { data.Name, data.Price, data.InitialQuantity }
                     )
                     .Single();
 
@@ -50,8 +52,10 @@ namespace SimpleEventSourcing.Samples.Web.Database
                     }
                 }
             }
-            if (@event is UpdateItemPriceEvent updateItemPriceEvent)
+            if (@event.EventName == nameof(ItemPriceUpdated))
             {
+                var data = @event.Data as ItemPriceUpdated;
+
                 using (var connection = GetViewsDatabaseConnection())
                 {
                     var updatedItem = connection.Query<ItemDbo>(
@@ -62,7 +66,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
 
                         SELECT * FROM [Item] WHERE [Id] = @ItemId;
                         ",
-                        new { updateItemPriceEvent.ItemId, updateItemPriceEvent.NewPrice }
+                        new { data.ItemId, data.NewPrice }
                     )
                     .Single();
 
@@ -78,8 +82,10 @@ namespace SimpleEventSourcing.Samples.Web.Database
                     }
                 }
             }
-            if (@event is SupplyItemEvent supplyItemEvent)
+            if (@event.EventName == nameof(ItemSupplied))
             {
+                var data = @event.Data as ItemSupplied;
+
                 using (var connection = GetViewsDatabaseConnection())
                 {
                     var updatedItem = connection.Query<ItemDbo>(
@@ -90,7 +96,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
 
                         SELECT * FROM [Item] WHERE [Id] = @ItemId;
                         ",
-                        new { supplyItemEvent.ItemId, supplyItemEvent.Quantity }
+                        new { data.ItemId, data.Quantity }
                     )
                     .Single();
 
@@ -106,8 +112,10 @@ namespace SimpleEventSourcing.Samples.Web.Database
                     }
                 }
             }
-            if (@event is ValidateOrderEvent validateOrderEvent)
+            if (@event.EventName == nameof(OrderValidated))
             {
+                var data = @event.Data as OrderValidated;
+
                 using (var connection = GetViewsDatabaseConnection())
                 {
                     var updatedItems = connection.Query<ItemDbo>(
@@ -118,7 +126,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
 
                         SELECT * FROM [Item] WHERE [Id] IN (SELECT [ItemId] FROM [ItemOrdered] WHERE [OrderId] = @OrderId);
                         ",
-                        new { validateOrderEvent.OrderId }
+                        new { data.OrderId }
                     )
                     .ToList();
 

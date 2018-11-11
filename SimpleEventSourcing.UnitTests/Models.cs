@@ -1,37 +1,62 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 
 namespace SimpleEventSourcing.UnitTests
 {
-    public class CartEventStore : EventStore { }
+    public class CartCommandDispatcher : CommandDispatcher<object, SimpleEvent>
+    {
+        protected override IEnumerable<SimpleEvent> Convert(object command)
+        {
+            // Simple Command Sourcing
+            return new List<SimpleEvent>
+            {
+                new SimpleEvent
+                {
+                    EventName = command.GetType().Name,
+                    Data = command,
+                    Metadata = new { CreatedDate = DateTime.Now }
+                }
+            };
+        }
+    }
+
+    public class CartEventStore : EventStore<SimpleEvent>
+    {
+        public CartEventStore(IObservable<IEnumerable<SimpleEvent>> eventAggregates) : base(eventAggregates)
+        {
+        }
+    }
 
     public class TotalCostCartState
     {
         public decimal TotalCost { get; set; }
     }
-    public class TotalCostCartEventView : InMemoryEventView<TotalCostCartState>
+    public class TotalCostCartEventView : InMemoryEventView<SimpleEvent, TotalCostCartState>
     {
-        public TotalCostCartEventView(IObservable<object> events) : base(events)
+        public TotalCostCartEventView(IObservable<SimpleEvent> events) : base(events)
         {
         }
 
-        protected override TotalCostCartState Reduce(TotalCostCartState state, object @event)
+        protected override TotalCostCartState Reduce(TotalCostCartState state, SimpleEvent @event)
         {
-            if (@event is AddItemInCartEvent addItemInCartEvent)
+            if (@event.EventName == nameof(AddItemInCartCommand))
             {
+                var data = @event.Data as AddItemInCartCommand;
                 return new TotalCostCartState
                 {
-                    TotalCost = state.TotalCost + (addItemInCartEvent.NumberOfUnits * addItemInCartEvent.UnitCost)
+                    TotalCost = state.TotalCost + (data.NumberOfUnits * data.UnitCost)
                 };
             }
-            if (@event is RemoveItemFromCartEvent removeItemFromCartEvent)
+            if (@event.EventName == nameof(RemoveItemFromCartCommand))
             {
+                var data = @event.Data as RemoveItemFromCartCommand;
                 return new TotalCostCartState
                 {
-                    TotalCost = state.TotalCost - removeItemFromCartEvent.UnitCost
+                    TotalCost = state.TotalCost - data.UnitCost
                 };
             }
-            if (@event is ResetCartEvent)
+            if (@event.EventName == nameof(ResetCartCommand))
             {
                 return new TotalCostCartState
                 {
@@ -47,42 +72,46 @@ namespace SimpleEventSourcing.UnitTests
         public ImmutableDictionary<string, long> Items { get; set; } = ImmutableDictionary<string, long>.Empty;
         public int NumberOfItems { get; set; }
     }
-    public class OrdersCartEventView : InMemoryEventView<OrdersCartState>
+    public class OrdersCartEventView : InMemoryEventView<SimpleEvent, OrdersCartState>
     {
-        public OrdersCartEventView(IObservable<object> events) : base(events)
+        public OrdersCartEventView(IObservable<SimpleEvent> events) : base(events)
         {
         }
 
-        protected override OrdersCartState Reduce(OrdersCartState state, object @event)
+        protected override OrdersCartState Reduce(OrdersCartState state, SimpleEvent @event)
         {
-            if (@event is AddItemInCartEvent addItemInCartEvent)
+            if (@event.EventName == nameof(AddItemInCartCommand))
             {
-                if (state.Items.ContainsKey(addItemInCartEvent.ItemName))
+                var data = @event.Data as AddItemInCartCommand;
+
+                if (state.Items.ContainsKey(data.ItemName))
                 {
                     return new OrdersCartState
                     {
-                        Items = state.Items.SetItem(addItemInCartEvent.ItemName, state.Items[addItemInCartEvent.ItemName] + addItemInCartEvent.NumberOfUnits),
-                        NumberOfItems = state.NumberOfItems + addItemInCartEvent.NumberOfUnits
+                        Items = state.Items.SetItem(data.ItemName, state.Items[data.ItemName] + data.NumberOfUnits),
+                        NumberOfItems = state.NumberOfItems + data.NumberOfUnits
                     };
                 }
                 else
                 {
                     return new OrdersCartState
                     {
-                        Items = state.Items.Add(addItemInCartEvent.ItemName, addItemInCartEvent.NumberOfUnits),
-                        NumberOfItems = state.NumberOfItems + addItemInCartEvent.NumberOfUnits
+                        Items = state.Items.Add(data.ItemName, data.NumberOfUnits),
+                        NumberOfItems = state.NumberOfItems + data.NumberOfUnits
                     };
                 }
             }
-            if (@event is RemoveItemFromCartEvent removeItemFromCartEvent)
+            if (@event.EventName == nameof(RemoveItemFromCartCommand))
             {
+                var data = @event.Data as RemoveItemFromCartCommand;
+
                 return new OrdersCartState
                 {
-                    Items = state.Items.SetItem(removeItemFromCartEvent.ItemName, state.Items[removeItemFromCartEvent.ItemName] - 1),
+                    Items = state.Items.SetItem(data.ItemName, state.Items[data.ItemName] - 1),
                     NumberOfItems = state.NumberOfItems - 1
                 };
             }
-            if (@event is ResetCartEvent)
+            if (@event.EventName == nameof(ResetCartCommand))
             {
                 return new OrdersCartState
                 {
@@ -94,20 +123,20 @@ namespace SimpleEventSourcing.UnitTests
         }
     }
 
-    public class AddItemInCartEvent
+    public class AddItemInCartCommand
     {
         public string ItemName { get; set; }
         public decimal UnitCost { get; set; }
         public int NumberOfUnits { get; set; } = 1;
     }
 
-    public class RemoveItemFromCartEvent
+    public class RemoveItemFromCartCommand
     {
         public string ItemName { get; set; }
         public decimal UnitCost { get; set; }
     }
 
-    public class ResetCartEvent
+    public class ResetCartCommand
     {
     }
 }

@@ -3,15 +3,15 @@ using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using static SimpleEventSourcing.Samples.Web.DatabaseConfiguration;
+using static SimpleEventSourcing.Samples.Web.Database.Configuration;
 
 namespace SimpleEventSourcing.Samples.Web.Database
 {
-    public class CartEventView : EventView
+    public class CartEventView : EventView<SimpleEvent>
     {
         private readonly Subject<ItemAndQuantity> _updatedEntitySubject = new Subject<ItemAndQuantity>();
 
-        public CartEventView(IObservable<object> events) : base(events)
+        public CartEventView(IObservable<SimpleEvent> events) : base(events)
         {
         }
 
@@ -20,14 +20,16 @@ namespace SimpleEventSourcing.Samples.Web.Database
             return _updatedEntitySubject.DistinctUntilChanged();
         }
 
-        protected override void Handle(object @event, bool replayed = false)
+        protected override void Handle(SimpleEvent @event, bool replayed = false)
         {
-            if (@event is AddItemInCartEvent addItemInCartEvent)
+            if (@event.EventName == nameof(CartItemSelected))
             {
+                var data = @event.Data as CartItemSelected;
+
                 using (var connection = GetViewsDatabaseConnection())
                 {
                     bool canUpdate = connection
-                        .Query<int>("SELECT COUNT(*) FROM [Cart] WHERE [ItemId] = @ItemId", new { addItemInCartEvent.ItemId })
+                        .Query<int>("SELECT COUNT(*) FROM [Cart] WHERE [ItemId] = @ItemId", new { data.ItemId })
                         .Single() > 0;
 
                     if (canUpdate)
@@ -40,7 +42,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
                         
                             SELECT [Quantity] FROM [Cart] WHERE [ItemId] = @ItemId;
                             ",
-                            new { addItemInCartEvent.ItemId, addItemInCartEvent.Quantity }
+                            new { data.ItemId, data.Quantity }
                         )
                         .Single();
 
@@ -48,7 +50,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
                         {
                             _updatedEntitySubject.OnNext(new ItemAndQuantity
                             {
-                                ItemId = addItemInCartEvent.ItemId,
+                                ItemId = data.ItemId,
                                 Quantity = newQuantity
                             });
                         }
@@ -60,38 +62,40 @@ namespace SimpleEventSourcing.Samples.Web.Database
                             INSERT INTO [Cart] 
                             ([ItemId], [Quantity])
                             VALUES (@ItemId, @Quantity)",
-                            new { addItemInCartEvent.ItemId, addItemInCartEvent.Quantity }
+                            new { data.ItemId, data.Quantity }
                         );
 
                         if (!replayed)
                         {
                             _updatedEntitySubject.OnNext(new ItemAndQuantity
                             {
-                                ItemId = addItemInCartEvent.ItemId,
-                                Quantity = addItemInCartEvent.Quantity
+                                ItemId = data.ItemId,
+                                Quantity = data.Quantity
                             });
                         }
                     }
                 }
             }
-            if (@event is RemoveItemFromCartEvent removeItemFromCartEvent)
+            if (@event.EventName == nameof(CartItemUnselected))
             {
+                var data = @event.Data as CartItemUnselected;
+
                 using (var connection = GetViewsDatabaseConnection())
                 {
                     int quantityInCart = connection
-                        .Query<int>("SELECT [Quantity] FROM [Cart] WHERE [ItemId] = @ItemId", new { removeItemFromCartEvent.ItemId })
+                        .Query<int>("SELECT [Quantity] FROM [Cart] WHERE [ItemId] = @ItemId", new { data.ItemId })
                         .Single();
-                    bool canDelete = removeItemFromCartEvent.Quantity >= quantityInCart;
+                    bool canDelete = data.Quantity >= quantityInCart;
 
                     if (canDelete)
                     {
-                        connection.Execute("DELETE FROM [Cart] WHERE [ItemId] = @ItemId", new { removeItemFromCartEvent.ItemId });
+                        connection.Execute("DELETE FROM [Cart] WHERE [ItemId] = @ItemId", new { data.ItemId });
 
                         if (!replayed)
                         {
                             _updatedEntitySubject.OnNext(new ItemAndQuantity
                             {
-                                ItemId = removeItemFromCartEvent.ItemId,
+                                ItemId = data.ItemId,
                                 Quantity = 0
                             });
                         }
@@ -106,7 +110,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
                         
                             SELECT [Quantity] FROM [Cart] WHERE [ItemId] = @ItemId;
                             ",
-                            new { removeItemFromCartEvent.ItemId, removeItemFromCartEvent.Quantity }
+                            new { data.ItemId, data.Quantity }
                         )
                         .Single();
 
@@ -114,14 +118,14 @@ namespace SimpleEventSourcing.Samples.Web.Database
                         {
                             _updatedEntitySubject.OnNext(new ItemAndQuantity
                             {
-                                ItemId = removeItemFromCartEvent.ItemId,
+                                ItemId = data.ItemId,
                                 Quantity = newQuantity
                             });
                         }
                     }
                 }
             }
-            if (@event is ResetCartEvent)
+            if (@event.EventName == nameof(CartReseted))
             {
                 using (var connection = GetViewsDatabaseConnection())
                 {

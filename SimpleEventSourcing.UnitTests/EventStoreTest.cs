@@ -1,4 +1,5 @@
 using System;
+using System.Reactive.Linq;
 using Xunit;
 
 namespace SimpleEventSourcing.UnitTests
@@ -9,10 +10,11 @@ namespace SimpleEventSourcing.UnitTests
         public void CanDispatchEvent()
         {
             // Arrange
-            var eventStore = new CartEventStore();
+            var commandDispatcher = new CartCommandDispatcher();
+            var eventStore = new CartEventStore(commandDispatcher.ObserveEventAggregate());
 
             // Act
-            eventStore.Dispatch(new AddItemInCartEvent
+            commandDispatcher.Dispatch(new AddItemInCartCommand
             {
                 ItemName = "Book",
                 UnitCost = 45
@@ -25,7 +27,8 @@ namespace SimpleEventSourcing.UnitTests
         public void CanObserveMultipleEventsOfTheSameType()
         {
             // Arrange
-            var eventStore = new CartEventStore();
+            var commandDispatcher = new CartCommandDispatcher();
+            var eventStore = new CartEventStore(commandDispatcher.ObserveEventAggregate());
 
             // Act
             int eventListenedCount = 0;
@@ -36,12 +39,12 @@ namespace SimpleEventSourcing.UnitTests
                     eventListenedCount++;
                 });
 
-            eventStore.Dispatch(new AddItemInCartEvent
+            commandDispatcher.Dispatch(new AddItemInCartCommand
             {
                 ItemName = "Book",
                 UnitCost = 45
             });
-            eventStore.Dispatch(new AddItemInCartEvent
+            commandDispatcher.Dispatch(new AddItemInCartCommand
             {
                 ItemName = "Book",
                 UnitCost = 20
@@ -55,11 +58,12 @@ namespace SimpleEventSourcing.UnitTests
         public void CanObserveMultipleEventsOfDifferentTypes()
         {
             // Arrange
-            var eventStore = new CartEventStore();
+            var commandDispatcher = new CartCommandDispatcher();
+            var eventStore = new CartEventStore(commandDispatcher.ObserveEventAggregate());
 
             // Act
             int eventListenedCount = 0;
-            object lastEvent = null;
+            SimpleEvent lastEvent = null;
 
             eventStore.ObserveEvent()
                 .Subscribe(@event =>
@@ -68,45 +72,47 @@ namespace SimpleEventSourcing.UnitTests
                     lastEvent = @event;
                 });
 
-            eventStore.Dispatch(new AddItemInCartEvent
+            commandDispatcher.Dispatch(new AddItemInCartCommand
             {
                 ItemName = "Book",
                 UnitCost = 45
             });
-            eventStore.Dispatch(new ResetCartEvent());
+            commandDispatcher.Dispatch(new ResetCartCommand());
 
             // Assert
             Assert.Equal(2, eventListenedCount);
-            Assert.IsType<ResetCartEvent>(lastEvent);
+            Assert.IsType<ResetCartCommand>(lastEvent.Data);
         }
 
         [Fact]
         public void CanObserveSingleEventType()
         {
             // Arrange
-            var eventStore = new CartEventStore();
+            var commandDispatcher = new CartCommandDispatcher();
+            var eventStore = new CartEventStore(commandDispatcher.ObserveEventAggregate());
 
             // Act
             int eventListenedCount = 0;
-            object lastEvent = null;
+            SimpleEvent lastEvent = null;
 
-            eventStore.ObserveEvent<AddItemInCartEvent>()
+            eventStore.ObserveEvent()
+                .Where(@event => @event.Data.GetType().Name == nameof(AddItemInCartCommand))
                 .Subscribe(@event =>
                 {
                     eventListenedCount++;
                     lastEvent = @event;
                 });
 
-            eventStore.Dispatch(new AddItemInCartEvent
+            commandDispatcher.Dispatch(new AddItemInCartCommand
             {
                 ItemName = "Book",
                 UnitCost = 45
             });
-            eventStore.Dispatch(new ResetCartEvent());
+            commandDispatcher.Dispatch(new ResetCartCommand());
 
             // Assert
             Assert.Equal(1, eventListenedCount);
-            Assert.IsType<AddItemInCartEvent>(lastEvent);
+            Assert.IsType<AddItemInCartCommand>(lastEvent.Data);
         }
     }
 }

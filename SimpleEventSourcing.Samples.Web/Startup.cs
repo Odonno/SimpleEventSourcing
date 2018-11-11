@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.SpaServices.Webpack;
 using Microsoft.Extensions.DependencyInjection;
 using SimpleEventSourcing.Samples.Web.Hubs;
 using Swashbuckle.AspNetCore.Swagger;
-using static SimpleEventSourcing.Samples.Web.Database.Functions;
+using static SimpleEventSourcing.Samples.Web.Database.Configuration;
 using static SimpleEventSourcing.Samples.Web.Program;
 
 namespace SimpleEventSourcing.Samples.Web
@@ -93,7 +93,7 @@ namespace SimpleEventSourcing.Samples.Web
                 await itemHubContext.Clients.All.SendAsync("Sync", item);
             });
 
-            AppEventStore.ObserveEventInfoSaved().Subscribe(async @event =>
+            AppEventStore.ObserveEvent().Subscribe(async @event =>
             {
                 await eventHubContext.Clients.All.SendAsync("Sync", @event);
             });

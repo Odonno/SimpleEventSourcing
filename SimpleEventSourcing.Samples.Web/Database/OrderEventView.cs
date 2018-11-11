@@ -3,15 +3,15 @@ using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using static SimpleEventSourcing.Samples.Web.DatabaseConfiguration;
+using static SimpleEventSourcing.Samples.Web.Database.Configuration;
 
 namespace SimpleEventSourcing.Samples.Web.Database
 {
-    public class OrderEventView : EventView
+    public class OrderEventView : EventView<SimpleEvent>
     {
         private readonly Subject<Order> _updatedEntitySubject = new Subject<Order>();
 
-        public OrderEventView(IObservable<object> events) : base(events)
+        public OrderEventView(IObservable<SimpleEvent> events) : base(events)
         {
         }
 
@@ -20,10 +20,13 @@ namespace SimpleEventSourcing.Samples.Web.Database
             return _updatedEntitySubject.DistinctUntilChanged();
         }
 
-        protected override void Handle(object @event, bool replayed = false)
+        protected override void Handle(SimpleEvent @event, bool replayed = false)
         {
-            if (@event is CreateOrderFromCartEvent createOrderFromCartEvent)
+            if (@event.EventName == nameof(OrderedFromCart))
             {
+                var data = @event.Data as OrderedFromCart;
+                var metadata = @event.Metadata as SimpleEventMetadata;
+
                 using (var connection = GetViewsDatabaseConnection())
                 {
                     var cart = connection
@@ -37,11 +40,11 @@ namespace SimpleEventSourcing.Samples.Web.Database
                         @"
                         INSERT INTO [Order] 
                         ([Number], [CreatedDate], [IsConfirmed], [IsCanceled])
-                        VALUES ((SELECT IFNULL(MAX([Number]), 0) + 1 FROM [Order]), @Date, 0, 0);
+                        VALUES ((SELECT IFNULL(MAX([Number]), 0) + 1 FROM [Order]), @CreatedDate, 0, 0);
 
                         SELECT * FROM [Order] ORDER BY [Id] DESC LIMIT 1;
                         ",
-                        new { createOrderFromCartEvent.Date }
+                        new { metadata.CreatedDate }
                     )
                     .Single();
 
@@ -92,8 +95,10 @@ namespace SimpleEventSourcing.Samples.Web.Database
                     }
                 }
             }
-            if (@event is ValidateOrderEvent validateOrderEvent)
+            if (@event.EventName == nameof(OrderValidated))
             {
+                var data = @event.Data as OrderValidated;
+
                 using (var connection = GetViewsDatabaseConnection())
                 {
                     connection.Execute(
@@ -101,18 +106,18 @@ namespace SimpleEventSourcing.Samples.Web.Database
                         UPDATE [Order] 
                         SET [IsConfirmed] = 1
                         WHERE [Id] = @OrderId",
-                        new { validateOrderEvent.OrderId }
+                        new { data.OrderId }
                     );
 
                     var order = connection.Query<OrderDbo>(
                         "SELECT * FROM [Order] WHERE [Id] = @OrderId",
-                        new { validateOrderEvent.OrderId }
+                        new { data.OrderId }
                     )
                     .Single();
 
                     var orderedItems = connection.Query<ItemOrderedDbo>(
                         "SELECT * FROM [ItemOrdered] WHERE [OrderId] = @OrderId",
-                        new { validateOrderEvent.OrderId }
+                        new { data.OrderId }
                     )
                     .ToList();
 
@@ -139,8 +144,10 @@ namespace SimpleEventSourcing.Samples.Web.Database
                     }
                 }
             }
-            if (@event is CancelOrderEvent cancelOrderEvent)
+            if (@event.EventName == nameof(OrderCanceled))
             {
+                var data = @event.Data as OrderCanceled;
+
                 using (var connection = GetViewsDatabaseConnection())
                 {
                     connection.Execute(
@@ -148,18 +155,18 @@ namespace SimpleEventSourcing.Samples.Web.Database
                         UPDATE [Order] 
                         SET [IsCanceled] = 1
                         WHERE [Id] = @OrderId",
-                        new { cancelOrderEvent.OrderId }
+                        new { data.OrderId }
                     );
 
                     var order = connection.Query<OrderDbo>(
                         "SELECT * FROM [Order] WHERE [Id] = @OrderId",
-                        new { cancelOrderEvent.OrderId }
+                        new { data.OrderId }
                     )
                     .Single();
 
                     var orderedItems = connection.Query<ItemOrderedDbo>(
                         "SELECT * FROM [ItemOrdered] WHERE [OrderId] = @OrderId",
-                        new { cancelOrderEvent.OrderId }
+                        new { data.OrderId }
                     )
                     .ToList();
 

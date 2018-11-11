@@ -2,15 +2,7 @@
 using System.Collections.Generic;
 
 namespace SimpleEventSourcing.Samples.Web
-{
-    public class EventInfo
-    {
-        public int Id { get; set; }
-        public string EventName { get; set; }
-        public DateTime CreatedDate { get; set; }
-        public string Data { get; set; }
-    }
-
+{    
     public class Cart
     {
         public IEnumerable<ItemAndQuantity> Items { get; set; }

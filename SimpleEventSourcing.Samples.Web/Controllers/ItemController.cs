@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Dapper;
 using System.Linq;
 using static SimpleEventSourcing.Samples.Web.Program;
-using static SimpleEventSourcing.Samples.Web.DatabaseConfiguration;
+using static SimpleEventSourcing.Samples.Web.Database.Configuration;
 using System;
 
 namespace SimpleEventSourcing.Samples.Web.Controllers
@@ -35,7 +35,7 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
         [HttpPost("create")]
         public void CreateItem(CreateItemRequest request)
         {
-            AppEventStore.Dispatch(new CreateItemEvent
+            AppCommandDispatcher.Dispatch(new CreateItemCommand
             {
                 Name = request.Name,
                 Price = request.Price,
@@ -46,7 +46,7 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
         [HttpPost("updatePrice")]
         public void UpdatePrice(UpdateItemPriceRequest request)
         {
-            AppEventStore.Dispatch(new UpdateItemPriceEvent
+            AppCommandDispatcher.Dispatch(new UpdateItemPriceCommand
             {
                 ItemId = request.ItemId,
                 NewPrice = request.NewPrice
@@ -56,7 +56,7 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
         [HttpPost("supply")]
         public void Supply(SupplyItemRequest request)
         {
-            AppEventStore.Dispatch(new SupplyItemEvent
+            AppCommandDispatcher.Dispatch(new SupplyItemCommand
             {
                 ItemId = request.ItemId,
                 Quantity = request.Quantity
