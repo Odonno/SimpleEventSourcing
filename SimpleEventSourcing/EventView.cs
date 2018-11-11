@@ -9,7 +9,7 @@ namespace SimpleEventSourcing
     /// This class does not contain a State and is mainly used to execute actions like updating a database after each event.
     /// </summary>
     public abstract class EventView<TEvent>
-        where TEvent : class, new()
+        where TEvent : SimpleEvent
     {
         protected EventView(IObservable<TEvent> events)
         {

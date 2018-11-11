@@ -95,8 +95,7 @@ namespace SimpleEventSourcing.UnitTests
             int eventListenedCount = 0;
             SimpleEvent lastEvent = null;
 
-            eventStore.ObserveEvent()
-                .Where(@event => @event.Data.GetType().Name == nameof(AddItemInCartCommand))
+            eventStore.ObserveEvent<AddItemInCartCommand>()
                 .Subscribe(@event =>
                 {
                     eventListenedCount++;

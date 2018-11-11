@@ -9,7 +9,7 @@ namespace SimpleEventSourcing
     /// The State is a real live-data updated whenever an observed event is pushed.
     /// </summary>
     public abstract class InMemoryEventView<TEvent, TState>
-        where TEvent : class, new()
+        where TEvent : SimpleEvent
         where TState : class, new()
     {
         private readonly Subject<TState> _stateSubject = new Subject<TState>();

@@ -16,7 +16,7 @@
         public object Data { get; set; }
 
         /// <summary>
-        /// The metadate of the event that add non-business details, like the date of a creation or a correlation id.
+        /// The metadate of the event that add non-business details, like the date of creation or a correlation id.
         /// </summary>
         public object Metadata { get; set; }
     }

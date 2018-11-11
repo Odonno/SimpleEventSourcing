@@ -61,14 +61,14 @@ The `EventStore` class should be redefine for your purpose. By default, the beha
 
 ```csharp
 public abstract class EventStore<TEvent> 
-    where TEvent : class, new()
+    where TEvent : SimpleEvent
 {
     protected EventStore(IObservable<IEnumerable<TEvent>> eventAggregates) { }
 
     public void Push(IEnumerable<TEvent> events);
 
     public IObservable<TEvent> ObserveEvent();
-    public IObservable<T> ObserveEvent<T>();
+    public IObservable<TEvent> ObserveEvent<TEventType>();
 }
 ```
 
@@ -87,7 +87,7 @@ Using this library, you will have the freedom to choose between two kind of view
 
 ```csharp
 public abstract class InMemoryEventView<TEvent, TState>
-    where TEvent : class, new()
+    where TEvent : SimpleEvent
     where TState : class, new()
 {
     public TState State { get; }
@@ -107,7 +107,7 @@ This other form of `EventView` gives you the ability to override the `Handle` me
 
 ```csharp
 public abstract class EventView<TEvent>
-    where TEvent : class, new()
+    where TEvent : SimpleEvent
 {
     protected EventView(IObservable<TEvent> events) { }
 

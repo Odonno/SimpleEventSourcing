@@ -9,7 +9,7 @@ namespace SimpleEventSourcing
     /// </summary>
     public abstract class CommandDispatcher<TCommand, TEvent> 
         where TCommand : class, new() 
-        where TEvent : class, new()
+        where TEvent : SimpleEvent
     {
         private readonly Subject<IEnumerable<TEvent>> _eventAggregateSubject = new Subject<IEnumerable<TEvent>>();
 

@@ -9,7 +9,7 @@ namespace SimpleEventSourcing
     /// The base class for creating Event Store (Write Model of an Event Sourcing architecture).
     /// </summary>
     public abstract class EventStore<TEvent> 
-        where TEvent : class, new()
+        where TEvent : SimpleEvent
     {
         private readonly Subject<TEvent> _eventSubject = new Subject<TEvent>();
 
@@ -45,13 +45,13 @@ namespace SimpleEventSourcing
         /// <summary>
         /// Observes events of a specific type being pushed in the store.
         /// </summary>
-        /// <typeparam name="T">The type of events that the subscriber is interested in.</typeparam>
+        /// <typeparam name="TEventType">The type of events that the subscriber is interested in.</typeparam>
         /// <returns>
-        /// An <see cref="IObservable{T}"/> that can be subscribed to in order to receive updates whenever an event of <typeparamref name="T"/> is pushed in the store.
+        /// An <see cref="IObservable{TEventType}"/> that can be subscribed to in order to receive updates whenever an event of <typeparamref name="TEventType"/> is pushed in the store.
         /// </returns>
-        public IObservable<T> ObserveEvent<T>() where T : class
+        public IObservable<TEvent> ObserveEvent<TEventType>() where TEventType : class
         {
-            return _eventSubject.OfType<T>();
+            return _eventSubject.Where(@event => @event.EventName == typeof(TEventType).Name);
         }
 
         /// <summary>
