@@ -28,26 +28,54 @@ Simple Event Sourcing library is defined by 5 different components:
 
 ### Commands
 
-TODO
+Commands are the actions coming from the world, generally from an HTTP request. It is the intent of a user or of the system to mutate the data store.
+
+```csharp
+public class AddItemInCartCommand
+{
+    public long ItemId { get; set; }
+    public int Quantity { get; set; }
+}
+
+public class RemoveItemFromCartCommand
+{
+    public long ItemId { get; set; }
+    public int Quantity { get; set; }
+}
+
+public class ResetCartCommand { }
+```
 
 ### Dispatcher of commands
 
-TODO
+The `CommandDispatcher`is the place where you dispatch all actions/commands that come from the world. A command can generate multiple events.
+
+```csharp
+public abstract class CommandDispatcher<TCommand, TEvent> 
+    where TCommand : class, new() 
+    where TEvent : SimpleEvent
+{
+    public void Dispatch(TCommand command);
+
+    public IObservable<IEnumerable<TEvent>> ObserveEventAggregate();
+}
+```
 
 ### Events
 
-Events is your own definition of the business actions. Using this library, you have to express each event as `class` and we take care of the rest. Here are some examples of events:
+Events are your own definition of the business actions. Using this library, you have to express each event as `class` and we take care of the rest. Here are some examples of events:
 
 ```csharp
-public class ItemAddedInCart
+public class CartItemSelected
 {
-    public string ItemName { get; set; }
-    public int NumberOfUnits { get; set; } = 1;
+    public long ItemId { get; set; }
+    public int Quantity { get; set; }
 }
 
-public class ItemRemovedFromCart
+public class CartItemUnselected
 {
-    public string ItemName { get; set; }
+    public long ItemId { get; set; }
+    public int Quantity { get; set; }
 }
 
 public class CartReseted { }

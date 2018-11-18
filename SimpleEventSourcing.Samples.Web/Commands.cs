@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace SimpleEventSourcing.Samples.Web
+﻿namespace SimpleEventSourcing.Samples.Web
 {
     public class AddItemInCartCommand
     {
