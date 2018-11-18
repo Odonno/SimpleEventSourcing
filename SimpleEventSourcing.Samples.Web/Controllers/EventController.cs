@@ -7,7 +7,6 @@ using System.Linq;
 using System;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.SignalR;
-using SimpleEventSourcing.Samples.Web.Hubs;
 using System.Threading.Tasks;
 using System.Dynamic;
 

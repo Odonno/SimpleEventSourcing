@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SpaServices.Webpack;
 using Microsoft.Extensions.DependencyInjection;
 using Newtonsoft.Json.Serialization;
-using SimpleEventSourcing.Samples.Web.Hubs;
 using Swashbuckle.AspNetCore.Swagger;
 using static SimpleEventSourcing.Samples.Web.Database.Configuration;
 using static SimpleEventSourcing.Samples.Web.Program;
