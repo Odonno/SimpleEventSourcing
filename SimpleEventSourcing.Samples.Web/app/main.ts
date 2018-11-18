@@ -744,6 +744,7 @@ const reduce = (state: State, action: Action): State => {
     if (action.type === "EVENT_REPLAY_STARTED") {
         return {
             ...initialState,
+            events: state.events,
             previousState: state
         };
     }
