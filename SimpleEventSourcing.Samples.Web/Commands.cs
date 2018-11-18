@@ -1,45 +1,45 @@
 ﻿namespace SimpleEventSourcing.Samples.Web
 {
-    public class CartItemSelected
+    public class AddItemInCartCommand
     {
         public long ItemId { get; set; }
         public int Quantity { get; set; }
     }
 
-    public class CartItemUnselected
+    public class RemoveItemFromCartCommand
     {
         public long ItemId { get; set; }
         public int Quantity { get; set; }
     }
 
-    public class CartReseted { }
+    public class ResetCartCommand { }
 
-    public class OrderedFromCart { }
+    public class CreateOrderFromCartCommand { }
 
-    public class OrderValidated
+    public class ValidateOrderCommand
     {
         public long OrderId { get; set; }
     }
 
-    public class OrderCanceled
+    public class CancelOrderCommand
     {
         public long OrderId { get; set; }
     }
 
-    public class ItemRegistered
+    public class CreateItemCommand
     {
         public string Name { get; set; }
         public decimal Price { get; set; }
         public int InitialQuantity { get; set; }
     }
 
-    public class ItemPriceUpdated
+    public class UpdateItemPriceCommand
     {
         public long ItemId { get; set; }
         public decimal NewPrice { get; set; }
     }
 
-    public class ItemSupplied
+    public class SupplyItemCommand
     {
         public long ItemId { get; set; }
         public int Quantity { get; set; }

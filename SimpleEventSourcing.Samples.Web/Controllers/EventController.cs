@@ -2,13 +2,14 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using static SimpleEventSourcing.Samples.Web.Program;
-using static SimpleEventSourcing.Samples.Web.DatabaseConfiguration;
+using static SimpleEventSourcing.Samples.Web.Database.Configuration;
 using System.Linq;
 using System;
 using Newtonsoft.Json;
 using Microsoft.AspNetCore.SignalR;
 using SimpleEventSourcing.Samples.Web.Hubs;
 using System.Threading.Tasks;
+using System.Dynamic;
 
 namespace SimpleEventSourcing.Samples.Web.Controllers
 {
@@ -30,12 +31,23 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
         }
 
         [HttpGet("all")]
-        public IEnumerable<EventInfo> GetAll()
+        public IEnumerable<AppEvent> GetAll()
         {
             using (var connection = GetEventsDatabaseConnection())
             {
                 return connection
-                    .Query<EventInfo>("SELECT * FROM [Event] ORDER BY [Id] DESC");
+                    .Query<EventDbo>("SELECT * FROM [Event] ORDER BY [Id] DESC")
+                    .Select(eventDbo =>
+                    {
+                        return new AppEvent
+                        {
+                            Id = eventDbo.Id,
+                            EventName = eventDbo.EventName,
+                            Data = JsonConvert.DeserializeObject<ExpandoObject>(eventDbo.Data),
+                            Metadata = JsonConvert.DeserializeObject<ExpandoObject>(eventDbo.Metadata)
+                        };
+                    })
+                    .ToList();
             }
         }
 
@@ -43,15 +55,20 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
         public async Task Replay()
         {
             // Get events stored
-            IEnumerable<object> events;
+            IEnumerable<SimpleEvent> events;
             using (var connection = GetEventsDatabaseConnection())
             {
                 events = connection
-                    .Query<EventInfo>("SELECT * FROM [Event] ORDER BY [Id] ASC")
-                    .Select(eventInfo =>
+                    .Query<EventDbo>("SELECT * FROM [Event] ORDER BY [Id] ASC")
+                    .Select(eventDbo =>
                     {
-                        var type = Type.GetType("SimpleEventSourcing.Samples.Web." + eventInfo.EventName);
-                        return JsonConvert.DeserializeObject(eventInfo.Data, type);
+                        return new AppEvent
+                        {
+                            Id = eventDbo.Id,
+                            EventName = eventDbo.EventName,
+                            Data = JsonConvert.DeserializeObject(eventDbo.Data),
+                            Metadata = JsonConvert.DeserializeObject(eventDbo.Metadata)
+                        };
                     })
                     .ToList();
             }
@@ -65,6 +82,7 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
                     DELETE FROM [Cart];
                     DELETE FROM [Order];
                     DELETE FROM [Item];
+                    DELETE FROM [sqlite_sequence];
                     "
                 );
             }

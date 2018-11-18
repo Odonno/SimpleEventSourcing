@@ -2,6 +2,14 @@
 
 namespace SimpleEventSourcing.Samples.Web
 {
+    public class EventDbo
+    {
+        public int Id { get; set; }
+        public string EventName { get; set; }
+        public string Data { get; set; }
+        public string Metadata { get; set; }
+    }
+
     public class OrderDbo
     {
         public long Id { get; set; }

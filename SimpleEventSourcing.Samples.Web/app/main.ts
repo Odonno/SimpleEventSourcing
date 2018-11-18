@@ -48,8 +48,11 @@ type Order = {
 type Event = {
     id: number;
     eventName: string;
-    createdDate: Date;
     data: any;
+    metadata: {
+        createdDate: Date,
+        correlationId?: string | undefined
+    };
 };
 
 // actions/events
@@ -741,6 +744,7 @@ const reduce = (state: State, action: Action): State => {
     if (action.type === "EVENT_REPLAY_STARTED") {
         return {
             ...initialState,
+            events: state.events,
             previousState: state
         };
     }
@@ -1316,7 +1320,7 @@ const eventsComponent$ = eventsChange$.pipe(
                         ]),
                         h("div", { className: "card-content" }, [
                             h("div", [
-                                JSON.stringify(JSON.parse(event.data), null, 4)
+                                JSON.stringify(event.data, null, 4)
                             ])
                         ])
                     ]);
@@ -1407,7 +1411,7 @@ const resetCartEpic$ = action$.pipe(
 const orderEpic$ = action$.pipe(
     ofType("SHOP_ORDER_STARTED"),
     mergeMap(_ =>
-        ajax.post("api/shop/order", { date: new Date() }).pipe(
+        ajax.post("api/shop/order", null).pipe(
             map(_ => actionsCreator.shop.order.succeed()),
             catchError(error => of(actionsCreator.shop.order.failed(error)))
         )

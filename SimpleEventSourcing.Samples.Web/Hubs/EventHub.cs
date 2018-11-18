@@ -5,7 +5,7 @@ namespace SimpleEventSourcing.Samples.Web.Hubs
 {
     public class EventHub : Hub
     {
-        public Task Sync(EventInfo @event)
+        public Task Sync(SimpleEvent @event)
         {
             return Clients.All.SendAsync("Sync", @event);
         }

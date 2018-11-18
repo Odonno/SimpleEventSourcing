@@ -8,7 +8,9 @@ namespace SimpleEventSourcing
     /// The base class for creating Event View (Read Model of an Event Sourcing architecture).
     /// The State is a real live-data updated whenever an observed event is pushed.
     /// </summary>
-    public abstract class InMemoryEventView<TState> where TState : class, new()
+    public abstract class InMemoryEventView<TEvent, TState>
+        where TEvent : SimpleEvent
+        where TState : class, new()
     {
         private readonly Subject<TState> _stateSubject = new Subject<TState>();
 
@@ -22,7 +24,7 @@ namespace SimpleEventSourcing
         /// </summary>
         /// <param name="events">The event stream to listen to in order to update the state.</param>
         /// <param name="initialState">The initial state to use in the view; if <c>null</c>, a default value is constructed using <c>new TState()</c>.</param>
-        protected InMemoryEventView(IObservable<object> events, TState initialState = null)
+        protected InMemoryEventView(IObservable<TEvent> events, TState initialState = null)
         {
             State = initialState ?? new TState();
 
@@ -36,7 +38,7 @@ namespace SimpleEventSourcing
         /// <summary>
         /// Observes the state of the store.
         /// </summary>
-        /// <returns>An <see cref="IObservable{T}"/> that can be subscribed to in order to receive updates about state changes.</returns>
+        /// <returns>An <see cref="IObservable{TState}"/> that can be subscribed to in order to receive updates about state changes.</returns>
         public IObservable<TState> ObserveState()
         {
             return _stateSubject.DistinctUntilChanged();
@@ -61,6 +63,6 @@ namespace SimpleEventSourcing
         /// <param name="state">The state to reduce.</param>
         /// <param name="event">The event to use for reducing the specified state.</param>
         /// <returns>The state that results from applying <paramref name="action"/> on <paramref name="state"/>.</returns>
-        protected abstract TState Reduce(TState state, object @event);
+        protected abstract TState Reduce(TState state, TEvent @event);
     }
 }

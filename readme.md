@@ -18,29 +18,67 @@ There is a sample application in this repository. It is a console application th
 
 ## Getting started
 
-Simple Event Sourcing library is defined by 3 different components:
+Simple Event Sourcing library is defined by 5 different components:
 
-* Events - a list of possible actions with the system (ex: user orders a book)
+* Commands - a command is an action coming from the top-layer of your architecture (from an HTTP method for example)
+* Command Dispatcher - convert a command (user action or system action) from into a list of events 
+* Events - a list of actions that happened in the system (ex: user ordered a book)
 * Event Store - the recording of events & the single source of truth (events stored in-memory or in a database)
 * Event View - a point of view extracted from the events (ex: total sales per user)
 
-### Events
+### Commands
 
-Events is your own definition of the business actions. Using this library, you have to express each event as `class` and we take care of the rest. Here are some examples of events:
+Commands are the actions coming from the world, generally from an HTTP request. It is the intent of a user or of the system to mutate the data store.
 
 ```csharp
-public class AddItemInCartEvent
+public class AddItemInCartCommand
 {
-    public string ItemName { get; set; }
-    public int NumberOfUnits { get; set; } = 1;
+    public long ItemId { get; set; }
+    public int Quantity { get; set; }
 }
 
-public class RemoveItemFromCartEvent
+public class RemoveItemFromCartCommand
 {
-    public string ItemName { get; set; }
+    public long ItemId { get; set; }
+    public int Quantity { get; set; }
 }
 
-public class ResetCartEvent { }
+public class ResetCartCommand { }
+```
+
+### Dispatcher of commands
+
+The `CommandDispatcher`is the place where you dispatch all actions/commands that come from the world. A command can generate multiple events.
+
+```csharp
+public abstract class CommandDispatcher<TCommand, TEvent> 
+    where TCommand : class, new() 
+    where TEvent : SimpleEvent
+{
+    public void Dispatch(TCommand command);
+
+    public IObservable<IEnumerable<TEvent>> ObserveEventAggregate();
+}
+```
+
+### Events
+
+Events are your own definition of the business actions. Using this library, you have to express each event as `class` and we take care of the rest. Here are some examples of events:
+
+```csharp
+public class CartItemSelected
+{
+    public long ItemId { get; set; }
+    public int Quantity { get; set; }
+}
+
+public class CartItemUnselected
+{
+    public long ItemId { get; set; }
+    public int Quantity { get; set; }
+}
+
+public class CartReseted { }
 ```
 
 ### Write Model - Event Store
@@ -50,16 +88,19 @@ Using Event Sourcing, the Write model consists of a set of events which are stor
 The `EventStore` class should be redefine for your purpose. By default, the behavior of the `EventStore` is to store events in-memory.
 
 ```csharp
-public abstract class EventStore
+public abstract class EventStore<TEvent> 
+    where TEvent : SimpleEvent
 {
-    public virtual void Dispatch(object @event);
+    protected EventStore(IObservable<IEnumerable<TEvent>> eventAggregates) { }
 
-    public IObservable<object> ObserveEvent();
-    public IObservable<T> ObserveEvent<T>();
+    public void Push(IEnumerable<TEvent> events);
+
+    public IObservable<TEvent> ObserveEvent();
+    public IObservable<TEvent> ObserveEvent<TEventType>();
 }
 ```
 
-If you need to make a persistent `EventStore`, feel free to override the `Dispatch` and store events in a database system.
+If you need to make a persistent `EventStore`, we offer a method called `Persist` you can use to store events in a database system.
 
 ### Read Model - Event View
 
@@ -73,11 +114,13 @@ Using this library, you will have the freedom to choose between two kind of view
 #### In-memory view
 
 ```csharp
-public abstract class InMemoryEventView<TState> where TState : class, new()
+public abstract class InMemoryEventView<TEvent, TState>
+    where TEvent : SimpleEvent
+    where TState : class, new()
 {
     public TState State { get; }
 
-    protected InMemoryEventView(IObservable<object> events, TState initialState = null) { }
+    protected InMemoryEventView(IObservable<TEvent> events, TState initialState = null) { }
 
     public IObservable<TState> ObserveState();
     public IObservable<TPartial> ObserveState<TPartial>(Func<TState, TPartial> selector);
@@ -91,12 +134,13 @@ In this particular form of `EventView`, from an event you get a new state immedi
 This other form of `EventView` gives you the ability to override the `Handle` method in which you can update a specific part of your data like a Table in a relational database.
 
 ```csharp
-public abstract class EventView
+public abstract class EventView<TEvent>
+    where TEvent : SimpleEvent
 {
-    protected EventView(IObservable<object> events) { }
+    protected EventView(IObservable<TEvent> events) { }
 
-    public virtual void Replay(object @event);
-    public virtual void Replay(IEnumerable<object> events);
+    public virtual void Replay(TEvent @event);
+    public virtual void Replay(IEnumerable<TEvent> events);
 }
 ```
 

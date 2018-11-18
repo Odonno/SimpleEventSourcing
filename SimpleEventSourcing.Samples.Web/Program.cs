@@ -6,7 +6,9 @@ namespace SimpleEventSourcing.Samples.Web
 {
     public static class Program
     {
-        public static readonly AppEventStore AppEventStore = new AppEventStore();
+        public static readonly AppCommandDispatcher AppCommandDispatcher = new AppCommandDispatcher();
+
+        public static readonly AppEventStore AppEventStore = new AppEventStore(AppCommandDispatcher.ObserveEventAggregate());
 
         public static readonly CartEventView CartEventView = new CartEventView(AppEventStore.ObserveEvent());
         public static readonly ItemEventView ItemEventView = new ItemEventView(AppEventStore.ObserveEvent());

@@ -11,7 +11,7 @@ namespace SimpleEventSourcing.UnitTests
         public void CanReadInitialState()
         {
             // Arrange
-            var eventSubject = new Subject<object>();
+            var eventSubject = new Subject<SimpleEvent>();
             var eventView = new TotalCostCartEventView(eventSubject.AsObservable());
 
             // Act
@@ -24,7 +24,7 @@ namespace SimpleEventSourcing.UnitTests
         public void CanObserveStateWithEventsOfTheSameType()
         {
             // Arrange
-            var eventSubject = new Subject<object>();
+            var eventSubject = new Subject<SimpleEvent>();
             var eventView = new TotalCostCartEventView(eventSubject.AsObservable());
 
             // Act
@@ -38,15 +38,23 @@ namespace SimpleEventSourcing.UnitTests
                     lastState = state;
                 });
 
-            eventSubject.OnNext(new AddItemInCartEvent
+            eventSubject.OnNext(new SimpleEvent
             {
-                ItemName = "Book",
-                UnitCost = 45
+                EventName = nameof(AddItemInCartCommand),
+                Data = new AddItemInCartCommand
+                {
+                    ItemName = "Book",
+                    UnitCost = 45
+                }
             });
-            eventSubject.OnNext(new AddItemInCartEvent
+            eventSubject.OnNext(new SimpleEvent
             {
-                ItemName = "Book",
-                UnitCost = 20
+                EventName = nameof(AddItemInCartCommand),
+                Data = new AddItemInCartCommand
+                {
+                    ItemName = "Book",
+                    UnitCost = 20
+                }
             });
 
             // Assert
@@ -59,7 +67,7 @@ namespace SimpleEventSourcing.UnitTests
         public void CanObserveStateWithEventsOfDifferentTypes()
         {
             // Arrange
-            var eventSubject = new Subject<object>();
+            var eventSubject = new Subject<SimpleEvent>();
             var eventView = new TotalCostCartEventView(eventSubject.AsObservable());
 
             // Act
@@ -73,12 +81,20 @@ namespace SimpleEventSourcing.UnitTests
                     lastState = state;
                 });
 
-            eventSubject.OnNext(new AddItemInCartEvent
+            eventSubject.OnNext(new SimpleEvent
             {
-                ItemName = "Book",
-                UnitCost = 45
+                EventName = nameof(AddItemInCartCommand),
+                Data = new AddItemInCartCommand
+                {
+                    ItemName = "Book",
+                    UnitCost = 45
+                }
             });
-            eventSubject.OnNext(new ResetCartEvent());
+            eventSubject.OnNext(new SimpleEvent
+            {
+                EventName = nameof(ResetCartCommand),
+                Data = new ResetCartCommand()
+            });
 
             // Assert
             Assert.Equal(2, eventListenedCount);
@@ -90,7 +106,7 @@ namespace SimpleEventSourcing.UnitTests
         public void CanObserveStateOfMultipleEventViews()
         {
             // Arrange
-            var eventSubject = new Subject<object>();
+            var eventSubject = new Subject<SimpleEvent>();
             var totalCostCartEventView = new TotalCostCartEventView(eventSubject.AsObservable());
             var ordersCartEventView = new OrdersCartEventView(eventSubject.AsObservable());
 
@@ -109,15 +125,23 @@ namespace SimpleEventSourcing.UnitTests
                     lastOrdersCartState = state;
                 });
 
-            eventSubject.OnNext(new AddItemInCartEvent
+            eventSubject.OnNext(new SimpleEvent
             {
-                ItemName = "Book",
-                UnitCost = 45
+                EventName = nameof(AddItemInCartCommand),
+                Data = new AddItemInCartCommand
+                {
+                    ItemName = "Book",
+                    UnitCost = 45
+                }
             });
-            eventSubject.OnNext(new AddItemInCartEvent
+            eventSubject.OnNext(new SimpleEvent
             {
-                ItemName = "Book",
-                UnitCost = 20
+                EventName = nameof(AddItemInCartCommand),
+                Data = new AddItemInCartCommand
+                {
+                    ItemName = "Book",
+                    UnitCost = 20
+                }
             });
 
             // Assert
@@ -135,7 +159,7 @@ namespace SimpleEventSourcing.UnitTests
         public void CanObserveStatePartially()
         {
             // Arrange
-            var eventSubject = new Subject<object>();
+            var eventSubject = new Subject<SimpleEvent>();
             var ordersCartEventView = new OrdersCartEventView(eventSubject.AsObservable());
 
             // Act
@@ -147,16 +171,24 @@ namespace SimpleEventSourcing.UnitTests
                     lastNumberOfItems = numberOfItems;
                 });
 
-            eventSubject.OnNext(new AddItemInCartEvent
+            eventSubject.OnNext(new SimpleEvent
             {
-                ItemName = "Book",
-                UnitCost = 45
+                EventName = nameof(AddItemInCartCommand),
+                Data = new AddItemInCartCommand
+                {
+                    ItemName = "Book",
+                    UnitCost = 45
+                }
             });
-            eventSubject.OnNext(new AddItemInCartEvent
+            eventSubject.OnNext(new SimpleEvent
             {
-                ItemName = "Book",
-                UnitCost = 20,
-                NumberOfUnits = 2
+                EventName = nameof(AddItemInCartCommand),
+                Data = new AddItemInCartCommand
+                {
+                    ItemName = "Book",
+                    UnitCost = 20,
+                    NumberOfUnits = 2
+                }
             });
 
             // Assert

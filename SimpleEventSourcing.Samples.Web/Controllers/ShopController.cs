@@ -3,7 +3,7 @@ using System;
 using Dapper;
 using System.Linq;
 using static SimpleEventSourcing.Samples.Web.Program;
-using static SimpleEventSourcing.Samples.Web.DatabaseConfiguration;
+using static SimpleEventSourcing.Samples.Web.Database.Configuration;
 
 namespace SimpleEventSourcing.Samples.Web.Controllers
 {
@@ -27,7 +27,7 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
         [HttpPost("cart/addItem")]
         public void AddItemInCart(AddItemInCartRequest request)
         {
-            AppEventStore.Dispatch(new AddItemInCartEvent
+            AppCommandDispatcher.Dispatch(new AddItemInCartCommand
             {
                 ItemId = request.ItemId,
                 Quantity = request.Quantity
@@ -37,7 +37,7 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
         [HttpPost("cart/removeItem")]
         public void RemoveItemFromCart(RemoveItemFromCartRequest request)
         {
-            AppEventStore.Dispatch(new RemoveItemFromCartEvent
+            AppCommandDispatcher.Dispatch(new RemoveItemFromCartCommand
             {
                 ItemId = request.ItemId,
                 Quantity = request.Quantity
@@ -47,14 +47,13 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
         [HttpPost("cart/reset")]
         public void ResetCart()
         {
-            AppEventStore.Dispatch(new ResetCartEvent());
+            AppCommandDispatcher.Dispatch(new ResetCartCommand());
         }
 
         [HttpPost("order")]
-        public void Order(CreateOrderFromCartRequest request)
+        public void Order()
         {
-            AppEventStore.Dispatch(new CreateOrderFromCartEvent { Date = request.Date });
-            AppEventStore.Dispatch(new ResetCartEvent());
+            AppCommandDispatcher.Dispatch(new CreateOrderFromCartCommand());
         }
     }
 
@@ -68,10 +67,5 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
     {
         public long ItemId { get; set; }
         public int Quantity { get; set; }
-    }
-
-    public class CreateOrderFromCartRequest
-    {
-        public DateTime Date { get; set; }
     }
 }

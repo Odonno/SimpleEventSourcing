@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Dapper;
 using System.Linq;
 using static SimpleEventSourcing.Samples.Web.Program;
-using static SimpleEventSourcing.Samples.Web.DatabaseConfiguration;
+using static SimpleEventSourcing.Samples.Web.Database.Configuration;
 using System;
 
 namespace SimpleEventSourcing.Samples.Web.Controllers
@@ -51,7 +51,7 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
         [HttpPost("validate")]
         public void Validate(ValidateOrderRequest request)
         {
-            AppEventStore.Dispatch(new ValidateOrderEvent
+            AppCommandDispatcher.Dispatch(new ValidateOrderCommand
             {
                 OrderId = request.OrderId
             });
@@ -60,7 +60,7 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
         [HttpPost("cancel")]
         public void Cancel(CancelOrderRequest request)
         {
-            AppEventStore.Dispatch(new CancelOrderEvent
+            AppCommandDispatcher.Dispatch(new CancelOrderCommand
             {
                 OrderId = request.OrderId
             });

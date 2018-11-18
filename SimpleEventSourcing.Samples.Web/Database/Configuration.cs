@@ -1,12 +1,31 @@
 ﻿using Dapper;
-using System.Reflection;
-using static SimpleEventSourcing.Samples.Web.DatabaseConfiguration;
+using Microsoft.Data.Sqlite;
+using System.Data;
 
 namespace SimpleEventSourcing.Samples.Web.Database
 {
-    public static class Functions
+    public static class Configuration
     {
-        private static readonly Assembly _entryAssembly = Assembly.GetEntryAssembly();
+        public const string EventsDatabaseFilePath = "EventsDatabase.db";
+        public const string ViewsDatabaseFilePath = "ViewsDatabase.db";
+
+        public static SqliteConnection GetEventsDatabaseConnection()
+        {
+            var connection = new SqliteConnection($"Data Source={EventsDatabaseFilePath}");
+            if (connection.State != ConnectionState.Open)
+                connection.Open();
+
+            return connection;
+        }
+
+        public static SqliteConnection GetViewsDatabaseConnection()
+        {
+            var connection = new SqliteConnection($"Data Source={ViewsDatabaseFilePath}");
+            if (connection.State != ConnectionState.Open)
+                connection.Open();
+
+            return connection;
+        }
 
         public static void CreateEventsDatabase()
         {
@@ -17,7 +36,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
                         [Id] INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
                         [EventName] VARCHAR(200) NOT NULL,
                         [Data] TEXT NOT NULL,
-                        [CreatedDate] DATETIME NOT NULL
+                        [Metadata] TEXT NULL
                     )"
                 );
             }
