@@ -24,7 +24,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
         {
             if (@event.EventName == nameof(CartItemSelected))
             {
-                var data = @event.Data as CartItemSelected;
+                var data = @event.Data.ConvertTo<CartItemSelected>();
 
                 using (var connection = GetViewsDatabaseConnection())
                 {
@@ -78,7 +78,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
             }
             if (@event.EventName == nameof(CartItemUnselected))
             {
-                var data = @event.Data as CartItemUnselected;
+                var data = @event.Data.ConvertTo<CartItemUnselected>();
 
                 using (var connection = GetViewsDatabaseConnection())
                 {

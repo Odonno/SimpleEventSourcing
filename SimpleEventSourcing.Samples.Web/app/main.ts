@@ -1319,7 +1319,7 @@ const eventsComponent$ = eventsChange$.pipe(
                         ]),
                         h("div", { className: "card-content" }, [
                             h("div", [
-                                JSON.stringify(JSON.parse(event.data), null, 4)
+                                JSON.stringify(event.data, null, 4)
                             ])
                         ])
                     ]);

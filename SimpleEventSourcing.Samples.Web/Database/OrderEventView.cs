@@ -24,7 +24,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
         {
             if (@event.EventName == nameof(OrderedFromCart))
             {
-                var data = @event.Data as OrderedFromCart;
+                var data = @event.Data.ConvertTo<OrderedFromCart>();
                 var metadata = @event.Metadata as SimpleEventMetadata;
 
                 using (var connection = GetViewsDatabaseConnection())
@@ -97,7 +97,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
             }
             if (@event.EventName == nameof(OrderValidated))
             {
-                var data = @event.Data as OrderValidated;
+                var data = @event.Data.ConvertTo<OrderValidated>();
 
                 using (var connection = GetViewsDatabaseConnection())
                 {
@@ -146,7 +146,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
             }
             if (@event.EventName == nameof(OrderCanceled))
             {
-                var data = @event.Data as OrderCanceled;
+                var data = @event.Data.ConvertTo<OrderCanceled>();
 
                 using (var connection = GetViewsDatabaseConnection())
                 {

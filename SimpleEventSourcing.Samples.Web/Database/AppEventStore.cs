@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,7 +30,12 @@ namespace SimpleEventSourcing.Samples.Web.Database
 
                         SELECT last_insert_rowid();
                         ",
-                        @event,
+                        new
+                        {
+                            EventName = @event.EventName,
+                            Data = JsonConvert.SerializeObject(@event.Data),
+                            Metadata = JsonConvert.SerializeObject(@event.Metadata)
+                        },
                         transaction
                     ).Single();
 
