@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SpaServices.Webpack;
 using Microsoft.Extensions.DependencyInjection;
+using Newtonsoft.Json.Serialization;
 using SimpleEventSourcing.Samples.Web.Hubs;
 using Swashbuckle.AspNetCore.Swagger;
 using static SimpleEventSourcing.Samples.Web.Database.Configuration;
@@ -16,7 +17,13 @@ namespace SimpleEventSourcing.Samples.Web
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc();
+            services.AddMvc()
+                .AddJsonOptions(o =>
+                    o.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver
+                    {
+                        NamingStrategy = new CamelCaseNamingStrategy { ProcessDictionaryKeys = true }
+                    }
+                );
 
             services.AddSwaggerGen(c =>
             {

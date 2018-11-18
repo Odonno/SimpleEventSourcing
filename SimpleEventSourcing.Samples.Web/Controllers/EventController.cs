@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.SignalR;
 using SimpleEventSourcing.Samples.Web.Hubs;
 using System.Threading.Tasks;
+using System.Dynamic;
 
 namespace SimpleEventSourcing.Samples.Web.Controllers
 {
@@ -42,8 +43,8 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
                         {
                             Id = eventDbo.Id,
                             EventName = eventDbo.EventName,
-                            Data = JsonConvert.DeserializeObject(eventDbo.Data),
-                            Metadata = JsonConvert.DeserializeObject(eventDbo.Metadata)
+                            Data = JsonConvert.DeserializeObject<ExpandoObject>(eventDbo.Data),
+                            Metadata = JsonConvert.DeserializeObject<ExpandoObject>(eventDbo.Metadata)
                         };
                     })
                     .ToList();
