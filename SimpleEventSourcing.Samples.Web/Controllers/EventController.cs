@@ -81,6 +81,7 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
                     DELETE FROM [Cart];
                     DELETE FROM [Order];
                     DELETE FROM [Item];
+                    DELETE FROM [sqlite_sequence];
                     "
                 );
             }
