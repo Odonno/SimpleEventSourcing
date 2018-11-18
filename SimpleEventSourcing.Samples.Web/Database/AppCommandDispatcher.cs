@@ -3,24 +3,24 @@ using System.Collections.Generic;
 
 namespace SimpleEventSourcing.Samples.Web.Database
 {
-    public class AppCommandDispatcher : CommandDispatcher<object, SimpleEvent>
+    public class AppCommandDispatcher : CommandDispatcher<object, AppEvent>
     {
-        protected override IEnumerable<SimpleEvent> Convert(object command)
+        protected override IEnumerable<AppEvent> Convert(object command)
         {
             // Either 1 command = a list of events (with correlation id)
             if (command is CreateOrderFromCartCommand)
             {
                 var metadata = new { CreatedDate = DateTime.Now, CorrelationId = Guid.NewGuid() };
 
-                return new List<SimpleEvent>
+                return new List<AppEvent>
                 {
-                    new SimpleEvent
+                    new AppEvent
                     {
                         EventName = GetEventNameFromCommandName(command.GetType().Name),
                         Data = command,
                         Metadata = metadata
                     },
-                    new SimpleEvent
+                    new AppEvent
                     {
                         EventName = GetEventNameFromCommandName(typeof(ResetCartCommand).Name),
                         Data = new ResetCartCommand(),
@@ -30,9 +30,9 @@ namespace SimpleEventSourcing.Samples.Web.Database
             }
 
             // Or a 1 command = 1 event pattern
-            return new List<SimpleEvent>
+            return new List<AppEvent>
             {
-                new SimpleEvent
+                new AppEvent
                 {
                     EventName = GetEventNameFromCommandName(command.GetType().Name),
                     Data = command,

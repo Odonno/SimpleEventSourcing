@@ -46,7 +46,7 @@ type Order = {
 };
 
 type Event = {
-    id?: number | undefined;
+    id: number;
     eventName: string;
     data: any;
     metadata: {
@@ -1310,7 +1310,6 @@ const eventsComponent$ = eventsChange$.pipe(
                     style: { marginBottom: "20px" },
                     onclick: () => dispatch(actionsCreator.events.replay.started())
                 }, ["replay all events"]),
-                // TODO : sort by created date
                 ...events.sort((a, b) => b.id - a.id).map(event => {
                     return h("div", { className: "card", key: event.id.toString(), style: { marginBottom: '10px' } }, [
                         h("div", { className: "card-header" }, [

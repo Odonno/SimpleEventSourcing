@@ -24,11 +24,8 @@ namespace SimpleEventSourcing
         /// <param name="events">The list of events to store.</param>
         public void Push(IEnumerable<TEvent> events)
         {
-            foreach (var @event in events)
-            {
-                Persist(@event);
-            }
-            foreach (var @event in events)
+            var persistedEvents = Persist(events);
+            foreach (var @event in persistedEvents)
             {
                 _eventSubject.OnNext(@event);
             }
@@ -55,13 +52,14 @@ namespace SimpleEventSourcing
         }
 
         /// <summary>
-        /// Save a new event in a persistent layer.
+        /// Save new events in a persistent layer.
         /// Implementations should override this method to provide functionality specific to their use case.
         /// </summary>
-        /// <param name="@event">The event to persist.</param>
-        protected virtual void Persist(TEvent @event)
+        /// <param name="events">The list of events to persist.</param>
+        protected virtual IEnumerable<TEvent> Persist(IEnumerable<TEvent> events)
         {
             // No persistent layer by default
+            return events;
         }
     }
 }
