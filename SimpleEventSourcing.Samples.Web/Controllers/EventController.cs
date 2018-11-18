@@ -30,7 +30,7 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
         }
 
         [HttpGet("all")]
-        public IEnumerable<SimpleEvent> GetAll()
+        public IEnumerable<AppEvent> GetAll()
         {
             using (var connection = GetEventsDatabaseConnection())
             {
@@ -38,8 +38,9 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
                     .Query<EventDbo>("SELECT * FROM [Event] ORDER BY [Id] DESC")
                     .Select(eventDbo =>
                     {
-                        return new SimpleEvent
+                        return new AppEvent
                         {
+                            Id = eventDbo.Id,
                             EventName = eventDbo.EventName,
                             Data = JsonConvert.DeserializeObject(eventDbo.Data),
                             Metadata = JsonConvert.DeserializeObject(eventDbo.Metadata)
@@ -60,8 +61,9 @@ namespace SimpleEventSourcing.Samples.Web.Controllers
                     .Query<EventDbo>("SELECT * FROM [Event] ORDER BY [Id] ASC")
                     .Select(eventDbo =>
                     {
-                        return new SimpleEvent
+                        return new AppEvent
                         {
+                            Id = eventDbo.Id,
                             EventName = eventDbo.EventName,
                             Data = JsonConvert.DeserializeObject(eventDbo.Data),
                             Metadata = JsonConvert.DeserializeObject(eventDbo.Metadata)
