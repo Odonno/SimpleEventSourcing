@@ -1361,6 +1361,10 @@ const ofType = (type: string) => {
     return filter<Action>(action => action.type === type);
 };
 
+const httpHeaders = { 
+    "Content-Type": "application/json" 
+};
+
 const loadAppEpic$ = action$.pipe(
     ofType("APP_LOAD_STARTED"),
     mergeMap(_ =>
@@ -1381,7 +1385,7 @@ const loadAppEpic$ = action$.pipe(
 const addItemInCartEpic$ = action$.pipe(
     ofType("SHOP_ADD_ITEM_IN_CART_STARTED"),
     mergeMap((action: AddItemInCartStartedAction) =>
-        ajax.post("api/shop/cart/addItem", action.payload).pipe(
+        ajax.post("api/shop/cart/addItem", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.shop.addItemInCart.succeed(action.payload)),
             catchError(error => of(actionsCreator.shop.addItemInCart.failed(error)))
         )
@@ -1391,7 +1395,7 @@ const addItemInCartEpic$ = action$.pipe(
 const removeItemFromCartEpic$ = action$.pipe(
     ofType("SHOP_REMOVE_ITEM_FROM_CART_STARTED"),
     mergeMap((action: RemoveItemFromCartStartedAction) =>
-        ajax.post("api/shop/cart/removeItem", action.payload).pipe(
+        ajax.post("api/shop/cart/removeItem", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.shop.removeItemFromCart.succeed(action.payload)),
             catchError(error => of(actionsCreator.shop.removeItemFromCart.failed(error)))
         )
@@ -1401,7 +1405,7 @@ const removeItemFromCartEpic$ = action$.pipe(
 const resetCartEpic$ = action$.pipe(
     ofType("SHOP_RESET_CART_STARTED"),
     mergeMap(_ =>
-        ajax.post("api/shop/cart/reset", null).pipe(
+        ajax.post("api/shop/cart/reset", {}, httpHeaders).pipe(
             map(_ => actionsCreator.shop.resetCart.succeed()),
             catchError(error => of(actionsCreator.shop.resetCart.failed(error)))
         )
@@ -1411,7 +1415,7 @@ const resetCartEpic$ = action$.pipe(
 const orderEpic$ = action$.pipe(
     ofType("SHOP_ORDER_STARTED"),
     mergeMap(_ =>
-        ajax.post("api/shop/order", null).pipe(
+        ajax.post("api/shop/order", {}, httpHeaders).pipe(
             map(_ => actionsCreator.shop.order.succeed()),
             catchError(error => of(actionsCreator.shop.order.failed(error)))
         )
@@ -1421,7 +1425,7 @@ const orderEpic$ = action$.pipe(
 const validateOrderEpic$ = action$.pipe(
     ofType("ORDER_VALIDATE_STARTED"),
     mergeMap((action: ValidateOrderStartedAction) =>
-        ajax.post("api/order/validate", action.payload).pipe(
+        ajax.post("api/order/validate", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.orders.validate.succeed()),
             catchError(error => of(actionsCreator.orders.validate.failed(error)))
         )
@@ -1431,7 +1435,7 @@ const validateOrderEpic$ = action$.pipe(
 const cancelOrderEpic$ = action$.pipe(
     ofType("ORDER_CANCEL_STARTED"),
     mergeMap((action: CancelOrderStartedAction) =>
-        ajax.post("api/order/cancel", action.payload).pipe(
+        ajax.post("api/order/cancel", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.orders.cancel.succeed()),
             catchError(error => of(actionsCreator.orders.cancel.failed(error)))
         )
@@ -1441,7 +1445,7 @@ const cancelOrderEpic$ = action$.pipe(
 const createItemEpic$ = action$.pipe(
     ofType("INVENTORY_CREATE_ITEM_STARTED"),
     mergeMap((action: CreateItemStartedAction) =>
-        ajax.post("api/item/create", action.payload).pipe(
+        ajax.post("api/item/create", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.inventory.createItem.succeed()),
             catchError(error => of(actionsCreator.inventory.createItem.failed(error)))
         )
@@ -1455,7 +1459,7 @@ const createItemSucceedEpic$ = action$.pipe(
 const updateItemPriceEpic$ = action$.pipe(
     ofType("INVENTORY_UPDATE_PRICE_STARTED"),
     mergeMap((action: UpdatePriceStartedAction) =>
-        ajax.post("api/item/updatePrice", action.payload).pipe(
+        ajax.post("api/item/updatePrice", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.inventory.updatePrice.succeed()),
             catchError(error => of(actionsCreator.inventory.updatePrice.failed(error)))
         )
@@ -1465,7 +1469,7 @@ const updateItemPriceEpic$ = action$.pipe(
 const supplyItemEpic$ = action$.pipe(
     ofType("INVENTORY_SUPPLY_ITEM_STARTED"),
     mergeMap((action: SupplyItemStartedAction) =>
-        ajax.post("api/item/supply", action.payload).pipe(
+        ajax.post("api/item/supply", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.inventory.supply.succeed(action.payload.itemId)),
             catchError(error => of(actionsCreator.inventory.supply.failed(error)))
         )
@@ -1475,7 +1479,7 @@ const supplyItemEpic$ = action$.pipe(
 const replayEventsEpic$ = action$.pipe(
     ofType("EVENT_REPLAY_STARTED"),
     mergeMap(_ =>
-        ajax.post("api/event/replay", null).pipe(
+        ajax.post("api/event/replay", null, httpHeaders).pipe(
             map(_ => actionsCreator.events.replay.succeed()),
             catchError(error => of(actionsCreator.events.replay.failed(error)))
         )

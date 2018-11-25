@@ -10,7 +10,11 @@ namespace SimpleEventSourcing.Samples.Web.Database
             // Either 1 command = a list of events (with correlation id)
             if (command is CreateOrderFromCartCommand)
             {
-                var metadata = new { CreatedDate = DateTime.Now, CorrelationId = Guid.NewGuid() };
+                var metadata = new SimpleEventMetadata
+                {
+                    CreatedDate = DateTime.Now,
+                    CorrelationId = Guid.NewGuid().ToString()
+                };
 
                 return new List<AppEvent>
                 {
@@ -36,7 +40,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
                 {
                     EventName = GetEventNameFromCommandName(command.GetType().Name),
                     Data = command,
-                    Metadata = new { CreatedDate = DateTime.Now }
+                    Metadata = new SimpleEventMetadata { CreatedDate = DateTime.Now }
                 }
             };
         }
