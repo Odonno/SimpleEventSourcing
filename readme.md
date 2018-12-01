@@ -12,7 +12,7 @@ Simple Event Sourcing is a .NET library based on the Event Sourcing architecture
 
 There is a sample application in this repository. It is a console application that showcases how you can use this library in your backend application. The console application focuses on:
 
-* A list of events on a concrete domain (e-commerce cart)
+* A list of events on a concrete domain (e-commerce shop)
 * An in-memory aggregator (building a State in-memory)
 * A relational database aggregator (using sqlite database system)
 

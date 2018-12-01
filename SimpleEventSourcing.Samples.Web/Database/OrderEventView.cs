@@ -25,7 +25,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
             if (@event.EventName == nameof(OrderedFromCart))
             {
                 var data = @event.Data.ConvertTo<OrderedFromCart>();
-                var metadata = @event.Metadata as SimpleEventMetadata;
+                var metadata = @event.Metadata.ConvertTo<SimpleEventMetadata>();
 
                 using (var connection = GetViewsDatabaseConnection())
                 {
