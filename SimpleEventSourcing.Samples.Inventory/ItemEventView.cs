@@ -1,12 +1,13 @@
 ﻿using Converto;
 using Dapper;
+using SimpleEventSourcing.Samples.Events;
 using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using static SimpleEventSourcing.Samples.Web.Database.Configuration;
+using static SimpleEventSourcing.Samples.Inventory.Configuration;
 
-namespace SimpleEventSourcing.Samples.Web.Database
+namespace SimpleEventSourcing.Samples.Inventory
 {
     public class ItemEventView : EventView<SimpleEvent>
     {
@@ -27,7 +28,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
             {
                 var data = @event.Data.ConvertTo<ItemRegistered>();
 
-                using (var connection = GetViewsDatabaseConnection())
+                using (var connection = GetDatabaseConnection())
                 {
                     var newItem = connection.Query<ItemDbo>(
                         @"
@@ -57,7 +58,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
             {
                 var data = @event.Data.ConvertTo<ItemPriceUpdated>();
 
-                using (var connection = GetViewsDatabaseConnection())
+                using (var connection = GetDatabaseConnection())
                 {
                     var updatedItem = connection.Query<ItemDbo>(
                         @"
@@ -87,7 +88,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
             {
                 var data = @event.Data.ConvertTo<ItemSupplied>();
 
-                using (var connection = GetViewsDatabaseConnection())
+                using (var connection = GetDatabaseConnection())
                 {
                     var updatedItem = connection.Query<ItemDbo>(
                         @"
@@ -117,7 +118,7 @@ namespace SimpleEventSourcing.Samples.Web.Database
             {
                 var data = @event.Data.ConvertTo<OrderValidated>();
 
-                using (var connection = GetViewsDatabaseConnection())
+                using (var connection = GetDatabaseConnection())
                 {
                     var updatedItems = connection.Query<ItemDbo>(
                         @"

@@ -1,20 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Dynamic;
+﻿//using System;
+//using System.Collections.Generic;
+//using System.Dynamic;
 using System.IO;
-using System.Linq;
-using Dapper;
+//using System.Linq;
+//using Dapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.SignalR;
+//using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SpaServices.Webpack;
 using Microsoft.Extensions.DependencyInjection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Serialization;
-using Swashbuckle.AspNetCore.Swagger;
-using Tagada.Swagger;
-using static SimpleEventSourcing.Samples.Web.Database.Configuration;
-using static SimpleEventSourcing.Samples.Web.Program;
+//using Newtonsoft.Json;
+//using Newtonsoft.Json.Serialization;
+//using Swashbuckle.AspNetCore.Swagger;
+//using Tagada.Swagger;
+//using static SimpleEventSourcing.Samples.Web.Database.Configuration;
+//using static SimpleEventSourcing.Samples.Web.Program;
 
 namespace SimpleEventSourcing.Samples.Web
 {
@@ -22,37 +22,37 @@ namespace SimpleEventSourcing.Samples.Web
     {
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc()
-                .AddJsonOptions(o =>
-                    o.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver
-                    {
-                        NamingStrategy = new CamelCaseNamingStrategy { ProcessDictionaryKeys = true }
-                    }
-                );
+            //services.AddMvc()
+            //    .AddJsonOptions(o =>
+            //        o.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver
+            //        {
+            //            NamingStrategy = new CamelCaseNamingStrategy { ProcessDictionaryKeys = true }
+            //        }
+            //    );
 
-            services.AddRouting();
+            //services.AddRouting();
 
-            services.AddSwaggerGen(c =>
-            {
-                c.SwaggerDoc("v1", new Info
-                {
-                    Title = "SimpleEventSourcing Example API",
-                    Version = "v1"
-                });
+            //services.AddSwaggerGen(c =>
+            //{
+            //    c.SwaggerDoc("v1", new Info
+            //    {
+            //        Title = "SimpleEventSourcing Example API",
+            //        Version = "v1"
+            //    });
 
-                c.GenerateTagadaSwaggerDoc();
-            });
+            //    c.GenerateTagadaSwaggerDoc();
+            //});
 
-            services.AddSignalR();
+            //services.AddSignalR();
         }
 
         public void Configure(
             IApplicationBuilder app, 
-            IHostingEnvironment env,
-            IHubContext<CartHub> cartHubContext,
-            IHubContext<OrderHub> orderHubContext,
-            IHubContext<ItemHub> itemHubContext,
-            IHubContext<EventHub> eventHubContext)
+            IHostingEnvironment env)//,
+            //IHubContext<CartHub> cartHubContext,
+            //IHubContext<OrderHub> orderHubContext,
+            //IHubContext<ItemHub> itemHubContext,
+            //IHubContext<EventHub> eventHubContext)
         {
             if (env.IsDevelopment())
             {
@@ -66,9 +66,9 @@ namespace SimpleEventSourcing.Samples.Web
                 });
             }
 
-            // Handle database creation
-            CreateEventsDatabase();
-            CreateViewsDatabase();
+            //// Handle database creation
+            //CreateEventsDatabase();
+            //CreateViewsDatabase();
 
             app.UseFileServer(new FileServerOptions()
             {
@@ -76,272 +76,170 @@ namespace SimpleEventSourcing.Samples.Web
                 EnableDefaultFiles = true
             });
 
-            // Realtime connections
-            app.UseSignalR(routes =>
-            {
-                routes.MapHub<CartHub>("/cart");
-                routes.MapHub<OrderHub>("/order");
-                routes.MapHub<ItemHub>("/item");
-                routes.MapHub<EventHub>("/event");
-            });
+            //// Realtime connections
+            //app.UseSignalR(routes =>
+            //{
+            //    routes.MapHub<CartHub>("/cart");
+            //    routes.MapHub<OrderHub>("/order");
+            //    routes.MapHub<ItemHub>("/item");
+            //    routes.MapHub<EventHub>("/event");
+            //});
 
-            app.UseMvc();
+            //app.UseMvc();
 
-            // API routes
-            app.Map("/api")
-                .Get("/shop/cart", GetCart)
-                .Post<AddItemInCartCommand>("/shop/cart/addItem", AppCommandDispatcher.Dispatch)
-                .Post<RemoveItemFromCartCommand>("/shop/cart/removeItem", AppCommandDispatcher.Dispatch)
-                .Post<ResetCartCommand>("/shop/cart/reset", AppCommandDispatcher.Dispatch)
-                .Post<CreateOrderFromCartCommand>("/shop/order", AppCommandDispatcher.Dispatch)
-                .Get("/item/all", GetAllItems)
-                .Post<CreateItemCommand>("/item/create", AppCommandDispatcher.Dispatch)
-                .Post<UpdateItemPriceCommand>("/item/updatePrice", AppCommandDispatcher.Dispatch)
-                .Post<SupplyItemCommand>("/item/supply", AppCommandDispatcher.Dispatch)
-                .Get("/order/all", GetAllOrders)
-                .Post<ValidateOrderCommand>("/order/validate", AppCommandDispatcher.Dispatch)
-                .Post<CancelOrderCommand>("/order/cancel", AppCommandDispatcher.Dispatch)
-                .Get("/event/all", GetAllEvents)
-                .Post<ReplayEventsCommand>("/event/replay", (_) => ReplayEvents(cartHubContext, itemHubContext, orderHubContext))
-                .AddSwagger()
-                .Use();
+            //// API routes
+            //app.Map("/api")
+            //    .Post<ReplayEventsCommand>("/event/replay", (_) => ReplayEvents(cartHubContext, itemHubContext, orderHubContext))
+            //    .AddSwagger()
+            //    .Use();
 
-            // Swagger UI
-            app.UseSwaggerUI(c =>
-            {
-                c.SwaggerEndpoint("v1/swagger.json", "SimpleEventSourcing Example API V1");
-            });
+            //// Swagger UI
+            //app.UseSwaggerUI(c =>
+            //{
+            //    c.SwaggerEndpoint("v1/swagger.json", "SimpleEventSourcing Example API V1");
+            //});
 
-            // Synchronize backend events (data mutations) with clients using signalr
-            OrderEventView.ObserveEntityChange().Subscribe(async order =>
-            {
-                await orderHubContext.Clients.All.SendAsync("Sync", order);
-            });
+            //// Synchronize backend events (data mutations) with clients using signalr
+            //OrderEventView.ObserveEntityChange().Subscribe(async order =>
+            //{
+            //    await orderHubContext.Clients.All.SendAsync("Sync", order);
+            //});
 
-            CartEventView.ObserveEntityChange().Subscribe(async itemAndQuantity =>
-            {
-                await cartHubContext.Clients.All.SendAsync("Sync", itemAndQuantity);
-            });
+            //CartEventView.ObserveEntityChange().Subscribe(async itemAndQuantity =>
+            //{
+            //    await cartHubContext.Clients.All.SendAsync("Sync", itemAndQuantity);
+            //});
 
-            ItemEventView.ObserveEntityChange().Subscribe(async item =>
-            {
-                await itemHubContext.Clients.All.SendAsync("Sync", item);
-            });
+            //ItemEventView.ObserveEntityChange().Subscribe(async item =>
+            //{
+            //    await itemHubContext.Clients.All.SendAsync("Sync", item);
+            //});
 
-            AppEventStore.ObserveEvent().Subscribe(async @event =>
-            {
-                await eventHubContext.Clients.All.SendAsync("Sync", @event);
-            });
-        }
+            //AppEventStore.ObserveEvent().Subscribe(async @event =>
+            //{
+            //    await eventHubContext.Clients.All.SendAsync("Sync", @event);
+            //});
+        }      
 
-        public static Func<GetCartQuery, Cart> GetCart = _ =>
-        {
-            using (var connection = GetViewsDatabaseConnection())
-            {
-                return new Cart
-                {
-                    Items = connection
-                        .Query<ItemAndQuantity>("SELECT [ItemId], [Quantity] FROM [Cart]")
-                        .ToList()
-                };
-            }
-        };
+    //    public static Action<IHubContext<CartHub>, IHubContext<ItemHub>, IHubContext<OrderHub>> ReplayEvents = async (
+    //        cartHubContext,
+    //        itemHubContext,
+    //        orderHubContext) =>
+    //    {
+    //        // Get events stored
+    //        IEnumerable<SimpleEvent> events;
+    //        using (var connection = GetEventsDatabaseConnection())
+    //        {
+    //            events = connection
+    //                .Query<EventDbo>("SELECT * FROM [Event] ORDER BY [Id] ASC")
+    //                .Select(eventDbo =>
+    //                {
+    //                    return new AppEvent
+    //                    {
+    //                        Id = eventDbo.Id,
+    //                        EventName = eventDbo.EventName,
+    //                        Data = JsonConvert.DeserializeObject(eventDbo.Data),
+    //                        Metadata = JsonConvert.DeserializeObject(eventDbo.Metadata)
+    //                    };
+    //                })
+    //                .ToList();
+    //        }
 
-        public static Func<GetItemsQuery, IEnumerable<Item>> GetAllItems = _ =>
-        {
-            using (var connection = GetViewsDatabaseConnection())
-            {
-                return connection
-                    .Query<ItemDbo>("SELECT * FROM [Item]")
-                    .Select(item =>
-                    {
-                        return new Item
-                        {
-                            Id = item.Id,
-                            Name = item.Name,
-                            Price = Convert.ToDecimal(item.Price),
-                            RemainingQuantity = item.RemainingQuantity,
-                        };
-                    })
-                    .ToList();
-            }
-        };
+    //        // Clear views database
+    //        using (var connection = GetViewsDatabaseConnection())
+    //        {
+    //            connection.Execute(
+    //                @"
+    //                DELETE FROM [ItemOrdered];
+    //                DELETE FROM [Cart];
+    //                DELETE FROM [Order];
+    //                DELETE FROM [Item];
+    //                DELETE FROM [sqlite_sequence];
+    //                "
+    //            );
+    //        }
 
-        public static Func<GetOrdersQuery, IEnumerable<Order>> GetAllOrders = _ =>
-        {
-            using (var connection = GetViewsDatabaseConnection())
-            {
-                var orders = connection
-                    .Query<OrderDbo>("SELECT * FROM [Order]")
-                    .ToList();
-                var itemsOrdered = connection
-                    .Query<ItemOrderedDbo>("SELECT * FROM [ItemOrdered]")
-                    .ToList();
+    //        // Replay events
+    //        foreach (var @event in events)
+    //        {
+    //            CartEventView.Replay(@event);
+    //            ItemEventView.Replay(@event);
+    //            OrderEventView.Replay(@event);
+    //        }
 
-                return orders.Select(order =>
-                {
-                    return new Order
-                    {
-                        Id = order.Id,
-                        CreatedDate = order.CreatedDate,
-                        Number = order.Number,
-                        IsConfirmed = order.IsConfirmed,
-                        IsCanceled = order.IsCanceled,
-                        Items = itemsOrdered
-                            .Where(i => i.OrderId == order.Id)
-                            .Select(i =>
-                            {
-                                return new ItemAndPriceAndQuantity
-                                {
-                                    ItemId = i.ItemId,
-                                    Price = Convert.ToDecimal(i.Price),
-                                    Quantity = i.Quantity
-                                };
-                            })
-                    };
-                });
-            }
-        };
+    //        List<Item> inventoryItems;
+    //        List<ItemAndQuantity> cartItems;
+    //        List<Order> orders;
 
-        public static Func<GetEventsQuery, IEnumerable<AppEvent>> GetAllEvents = _ =>
-        {
-            using (var connection = GetEventsDatabaseConnection())
-            {
-                return connection
-                    .Query<EventDbo>("SELECT * FROM [Event] ORDER BY [Id] DESC")
-                    .Select(eventDbo =>
-                    {
-                        return new AppEvent
-                        {
-                            Id = eventDbo.Id,
-                            EventName = eventDbo.EventName,
-                            Data = JsonConvert.DeserializeObject<ExpandoObject>(eventDbo.Data),
-                            Metadata = JsonConvert.DeserializeObject<ExpandoObject>(eventDbo.Metadata)
-                        };
-                    })
-                    .ToList();
-            }
-        };
+    //        // Get results from the replay in realtime
+    //        using (var connection = GetViewsDatabaseConnection())
+    //        {
+    //            inventoryItems = connection
+    //                .Query<ItemDbo>("SELECT * FROM [Item]")
+    //                .Select(item =>
+    //                {
+    //                    return new Item
+    //                    {
+    //                        Id = item.Id,
+    //                        Name = item.Name,
+    //                        Price = Convert.ToDecimal(item.Price),
+    //                        RemainingQuantity = item.RemainingQuantity,
+    //                    };
+    //                })
+    //                .ToList();
 
-        public static Action<IHubContext<CartHub>, IHubContext<ItemHub>, IHubContext<OrderHub>> ReplayEvents = async (
-            cartHubContext,
-            itemHubContext,
-            orderHubContext) =>
-        {
-            // Get events stored
-            IEnumerable<SimpleEvent> events;
-            using (var connection = GetEventsDatabaseConnection())
-            {
-                events = connection
-                    .Query<EventDbo>("SELECT * FROM [Event] ORDER BY [Id] ASC")
-                    .Select(eventDbo =>
-                    {
-                        return new AppEvent
-                        {
-                            Id = eventDbo.Id,
-                            EventName = eventDbo.EventName,
-                            Data = JsonConvert.DeserializeObject(eventDbo.Data),
-                            Metadata = JsonConvert.DeserializeObject(eventDbo.Metadata)
-                        };
-                    })
-                    .ToList();
-            }
+    //            cartItems = connection
+    //                .Query<ItemAndQuantity>("SELECT [ItemId], [Quantity] FROM [Cart]")
+    //                .ToList();
 
-            // Clear views database
-            using (var connection = GetViewsDatabaseConnection())
-            {
-                connection.Execute(
-                    @"
-                    DELETE FROM [ItemOrdered];
-                    DELETE FROM [Cart];
-                    DELETE FROM [Order];
-                    DELETE FROM [Item];
-                    DELETE FROM [sqlite_sequence];
-                    "
-                );
-            }
+    //            var ordersDbo = connection
+    //                .Query<OrderDbo>("SELECT * FROM [Order]")
+    //                .ToList();
+    //            var itemsOrderedDbo = connection
+    //                .Query<ItemOrderedDbo>("SELECT * FROM [ItemOrdered]")
+    //                .ToList();
 
-            // Replay events
-            foreach (var @event in events)
-            {
-                CartEventView.Replay(@event);
-                ItemEventView.Replay(@event);
-                OrderEventView.Replay(@event);
-            }
+    //            orders = ordersDbo
+    //                .Select(order =>
+    //                {
+    //                    return new Order
+    //                    {
+    //                        Id = order.Id,
+    //                        CreatedDate = order.CreatedDate,
+    //                        Number = order.Number,
+    //                        IsConfirmed = order.IsConfirmed,
+    //                        IsCanceled = order.IsCanceled,
+    //                        Items = itemsOrderedDbo
+    //                            .Where(i => i.OrderId == order.Id)
+    //                            .Select(i =>
+    //                            {
+    //                                return new ItemAndPriceAndQuantity
+    //                                {
+    //                                    ItemId = i.ItemId,
+    //                                    Price = Convert.ToDecimal(i.Price),
+    //                                    Quantity = i.Quantity
+    //                                };
+    //                            })
+    //                    };
+    //                })
+    //                .ToList();
+    //        }
 
-            List<Item> inventoryItems;
-            List<ItemAndQuantity> cartItems;
-            List<Order> orders;
+    //        // Sync data with the client
+    //        foreach (var item in inventoryItems)
+    //        {
+    //            await itemHubContext.Clients.All.SendAsync("Sync", item);
+    //        }
 
-            // Get results from the replay in realtime
-            using (var connection = GetViewsDatabaseConnection())
-            {
-                inventoryItems = connection
-                    .Query<ItemDbo>("SELECT * FROM [Item]")
-                    .Select(item =>
-                    {
-                        return new Item
-                        {
-                            Id = item.Id,
-                            Name = item.Name,
-                            Price = Convert.ToDecimal(item.Price),
-                            RemainingQuantity = item.RemainingQuantity,
-                        };
-                    })
-                    .ToList();
+    //        foreach (var cartItem in cartItems)
+    //        {
+    //            await cartHubContext.Clients.All.SendAsync("Sync", cartItem);
+    //        }
 
-                cartItems = connection
-                    .Query<ItemAndQuantity>("SELECT [ItemId], [Quantity] FROM [Cart]")
-                    .ToList();
-
-                var ordersDbo = connection
-                    .Query<OrderDbo>("SELECT * FROM [Order]")
-                    .ToList();
-                var itemsOrderedDbo = connection
-                    .Query<ItemOrderedDbo>("SELECT * FROM [ItemOrdered]")
-                    .ToList();
-
-                orders = ordersDbo
-                    .Select(order =>
-                    {
-                        return new Order
-                        {
-                            Id = order.Id,
-                            CreatedDate = order.CreatedDate,
-                            Number = order.Number,
-                            IsConfirmed = order.IsConfirmed,
-                            IsCanceled = order.IsCanceled,
-                            Items = itemsOrderedDbo
-                                .Where(i => i.OrderId == order.Id)
-                                .Select(i =>
-                                {
-                                    return new ItemAndPriceAndQuantity
-                                    {
-                                        ItemId = i.ItemId,
-                                        Price = Convert.ToDecimal(i.Price),
-                                        Quantity = i.Quantity
-                                    };
-                                })
-                        };
-                    })
-                    .ToList();
-            }
-
-            // Sync data with the client
-            foreach (var item in inventoryItems)
-            {
-                await itemHubContext.Clients.All.SendAsync("Sync", item);
-            }
-
-            foreach (var cartItem in cartItems)
-            {
-                await cartHubContext.Clients.All.SendAsync("Sync", cartItem);
-            }
-
-            foreach (var order in orders)
-            {
-                await orderHubContext.Clients.All.SendAsync("Sync", order);
-            }
-        };
+    //        foreach (var order in orders)
+    //        {
+    //            await orderHubContext.Clients.All.SendAsync("Sync", order);
+    //        }
+    //    };
     }
 }

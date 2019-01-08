@@ -1,7 +1,8 @@
-﻿using System;
+﻿using SimpleEventSourcing.Samples.Events;
+using System;
 using System.Collections.Generic;
 
-namespace SimpleEventSourcing.Samples.Web.Database
+namespace SimpleEventSourcing.Samples.Shop
 {
     public class AppCommandDispatcher : CommandDispatcher<object, AppEvent>
     {
@@ -57,16 +58,6 @@ namespace SimpleEventSourcing.Samples.Web.Database
                     return "CartReseted";
                 case nameof(CreateOrderFromCartCommand):
                     return "OrderedFromCart";
-                case nameof(ValidateOrderCommand):
-                    return "OrderValidated";
-                case nameof(CancelOrderCommand):
-                    return "OrderCanceled";
-                case nameof(CreateItemCommand):
-                    return "ItemRegistered";
-                case nameof(UpdateItemPriceCommand):
-                    return "ItemPriceUpdated";
-                case nameof(SupplyItemCommand):
-                    return "ItemSupplied";
             }
             throw new NotImplementedException();
         }

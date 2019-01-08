@@ -1,14 +1,14 @@
-﻿namespace SimpleEventSourcing.Samples.Web
+﻿namespace SimpleEventSourcing.Samples.Events
 {
     public class CartItemSelected
     {
-        public long ItemId { get; set; }
+        public string ItemId { get; set; }
         public int Quantity { get; set; }
     }
 
     public class CartItemUnselected
     {
-        public long ItemId { get; set; }
+        public string ItemId { get; set; }
         public int Quantity { get; set; }
     }
 
@@ -18,12 +18,12 @@
 
     public class OrderValidated
     {
-        public long OrderId { get; set; }
+        public string OrderId { get; set; }
     }
 
     public class OrderCanceled
     {
-        public long OrderId { get; set; }
+        public string OrderId { get; set; }
     }
 
     public class ItemRegistered
@@ -35,13 +35,13 @@
 
     public class ItemPriceUpdated
     {
-        public long ItemId { get; set; }
+        public string ItemId { get; set; }
         public decimal NewPrice { get; set; }
     }
 
     public class ItemSupplied
     {
-        public long ItemId { get; set; }
+        public string ItemId { get; set; }
         public int Quantity { get; set; }
     }
 }

@@ -17,6 +17,20 @@ import { ajax } from 'rxjs/ajax';
 import { h, diff, patch } from 'virtual-dom';
 import { HubConnectionBuilder } from '@aspnet/signalr';
 
+// backend services
+const shopService = {
+    url: 'http://localhost:50324/',
+};
+const inventoryService = {
+    url: 'http://localhost:50330/',
+};
+const orderService = {
+    url: 'http://localhost:50336/',
+};
+const eventHistoryService = {
+    url: 'http://localhost:50815/',
+};
+
 // models
 type Item = {
     id: number;
@@ -220,17 +234,6 @@ type AddEventAction = {
     event: Event
 };
 
-type ReplayEventsStartedAction = {
-    type: "EVENT_REPLAY_STARTED"
-};
-type ReplayEventsSucceedAction = {
-    type: "EVENT_REPLAY_SUCCEED"
-};
-type ReplayEventsFailedAction = {
-    type: "EVENT_REPLAY_FAILED",
-    error: any
-};
-
 type AppAction =
     ChangePageAction | UpdateSearchAction
     | UpdateFormAction | ClearFormAction
@@ -255,8 +258,7 @@ type InventoryAction =
     | UpsertItemAction;
 
 type EventAction =
-    AddEventAction
-    | ReplayEventsStartedAction | ReplayEventsSucceedAction | ReplayEventsFailedAction;
+    AddEventAction;
 
 type Action =
     AppAction
@@ -343,12 +345,7 @@ const actionsCreator = {
         upsert: (item: Item) => <UpsertItemAction>({ type: "INVENTORY_UPSERT_ITEM", item })
     },
     events: {
-        add: (event: Event) => <AddEventAction>({ type: "EVENT_ADD", event }),
-        replay: {
-            started: () => <ReplayEventsStartedAction>({ type: "EVENT_REPLAY_STARTED" }),
-            succeed: () => <ReplayEventsSucceedAction>({ type: "EVENT_REPLAY_SUCCEED" }),
-            failed: (error: any) => <ReplayEventsFailedAction>({ type: "EVENT_REPLAY_FAILED", error })
-        }
+        add: (event: Event) => <AddEventAction>({ type: "EVENT_ADD", event })
     }
 };
 
@@ -740,22 +737,6 @@ const reduce = (state: State, action: Action): State => {
             ...state,
             events: [...state.events, action.event]
         }
-    }
-    if (action.type === "EVENT_REPLAY_STARTED") {
-        return {
-            ...initialState,
-            events: state.events,
-            previousState: state
-        };
-    }
-    if (action.type === "EVENT_REPLAY_SUCCEED") {
-        return {
-            ...state,
-            previousState: undefined
-        };
-    }
-    if (action.type === "EVENT_REPLAY_FAILED") {
-        return state.previousState;
     }
     return state;
 };
@@ -1306,11 +1287,6 @@ const eventsComponent$ = eventsChange$.pipe(
 
         return h("section", {}, [
             h("div", { className: "container" }, [
-                h("button", {
-                    className: "button is-rounded is-primary is-outlined",
-                    style: { marginBottom: "20px" },
-                    onclick: () => dispatch(actionsCreator.events.replay.started())
-                }, ["replay all events"]),
                 ...events.sort((a, b) => b.id - a.id).map(event => {
                     return h("div", { className: "card", key: event.id.toString(), style: { marginBottom: '10px' } }, [
                         h("div", { className: "card-header" }, [
@@ -1369,10 +1345,10 @@ const loadAppEpic$ = action$.pipe(
     ofType("APP_LOAD_STARTED"),
     mergeMap(_ =>
         forkJoin([
-            ajax.getJSON<Item[]>("api/item/all"),
-            ajax.getJSON<Cart>("api/shop/cart"),
-            ajax.getJSON<Order[]>("api/order/all"),
-            ajax.getJSON<Event[]>("api/event/all")
+            ajax.getJSON<Item[]>(inventoryService.url + "api/all"),
+            ajax.getJSON<Cart>(shopService.url + "api/cart"),
+            ajax.getJSON<Order[]>(orderService.url + "api/all"),
+            ajax.getJSON<Event[]>(eventHistoryService.url + "api/events")
         ]).pipe(
             map(([items, cart, orders, events]) => {
                 return actionsCreator.app.load.succeed(items, cart, orders, events);
@@ -1385,7 +1361,7 @@ const loadAppEpic$ = action$.pipe(
 const addItemInCartEpic$ = action$.pipe(
     ofType("SHOP_ADD_ITEM_IN_CART_STARTED"),
     mergeMap((action: AddItemInCartStartedAction) =>
-        ajax.post("api/shop/cart/addItem", action.payload, httpHeaders).pipe(
+        ajax.post(shopService.url + "api/cart/addItem", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.shop.addItemInCart.succeed(action.payload)),
             catchError(error => of(actionsCreator.shop.addItemInCart.failed(error)))
         )
@@ -1395,7 +1371,7 @@ const addItemInCartEpic$ = action$.pipe(
 const removeItemFromCartEpic$ = action$.pipe(
     ofType("SHOP_REMOVE_ITEM_FROM_CART_STARTED"),
     mergeMap((action: RemoveItemFromCartStartedAction) =>
-        ajax.post("api/shop/cart/removeItem", action.payload, httpHeaders).pipe(
+        ajax.post(shopService.url + "api/cart/removeItem", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.shop.removeItemFromCart.succeed(action.payload)),
             catchError(error => of(actionsCreator.shop.removeItemFromCart.failed(error)))
         )
@@ -1405,7 +1381,7 @@ const removeItemFromCartEpic$ = action$.pipe(
 const resetCartEpic$ = action$.pipe(
     ofType("SHOP_RESET_CART_STARTED"),
     mergeMap(_ =>
-        ajax.post("api/shop/cart/reset", {}, httpHeaders).pipe(
+        ajax.post(shopService.url + "api/cart/reset", {}, httpHeaders).pipe(
             map(_ => actionsCreator.shop.resetCart.succeed()),
             catchError(error => of(actionsCreator.shop.resetCart.failed(error)))
         )
@@ -1415,7 +1391,7 @@ const resetCartEpic$ = action$.pipe(
 const orderEpic$ = action$.pipe(
     ofType("SHOP_ORDER_STARTED"),
     mergeMap(_ =>
-        ajax.post("api/shop/order", {}, httpHeaders).pipe(
+        ajax.post(shopService.url + "api/order", {}, httpHeaders).pipe(
             map(_ => actionsCreator.shop.order.succeed()),
             catchError(error => of(actionsCreator.shop.order.failed(error)))
         )
@@ -1425,7 +1401,7 @@ const orderEpic$ = action$.pipe(
 const validateOrderEpic$ = action$.pipe(
     ofType("ORDER_VALIDATE_STARTED"),
     mergeMap((action: ValidateOrderStartedAction) =>
-        ajax.post("api/order/validate", action.payload, httpHeaders).pipe(
+        ajax.post(orderService.url + "api/validate", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.orders.validate.succeed()),
             catchError(error => of(actionsCreator.orders.validate.failed(error)))
         )
@@ -1435,7 +1411,7 @@ const validateOrderEpic$ = action$.pipe(
 const cancelOrderEpic$ = action$.pipe(
     ofType("ORDER_CANCEL_STARTED"),
     mergeMap((action: CancelOrderStartedAction) =>
-        ajax.post("api/order/cancel", action.payload, httpHeaders).pipe(
+        ajax.post(orderService.url + "api/cancel", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.orders.cancel.succeed()),
             catchError(error => of(actionsCreator.orders.cancel.failed(error)))
         )
@@ -1445,7 +1421,7 @@ const cancelOrderEpic$ = action$.pipe(
 const createItemEpic$ = action$.pipe(
     ofType("INVENTORY_CREATE_ITEM_STARTED"),
     mergeMap((action: CreateItemStartedAction) =>
-        ajax.post("api/item/create", action.payload, httpHeaders).pipe(
+        ajax.post(inventoryService.url + "api/create", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.inventory.createItem.succeed()),
             catchError(error => of(actionsCreator.inventory.createItem.failed(error)))
         )
@@ -1459,7 +1435,7 @@ const createItemSucceedEpic$ = action$.pipe(
 const updateItemPriceEpic$ = action$.pipe(
     ofType("INVENTORY_UPDATE_PRICE_STARTED"),
     mergeMap((action: UpdatePriceStartedAction) =>
-        ajax.post("api/item/updatePrice", action.payload, httpHeaders).pipe(
+        ajax.post(inventoryService.url + "api/updatePrice", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.inventory.updatePrice.succeed()),
             catchError(error => of(actionsCreator.inventory.updatePrice.failed(error)))
         )
@@ -1469,19 +1445,9 @@ const updateItemPriceEpic$ = action$.pipe(
 const supplyItemEpic$ = action$.pipe(
     ofType("INVENTORY_SUPPLY_ITEM_STARTED"),
     mergeMap((action: SupplyItemStartedAction) =>
-        ajax.post("api/item/supply", action.payload, httpHeaders).pipe(
+        ajax.post(inventoryService.url + "api/supply", action.payload, httpHeaders).pipe(
             map(_ => actionsCreator.inventory.supply.succeed(action.payload.itemId)),
             catchError(error => of(actionsCreator.inventory.supply.failed(error)))
-        )
-    )
-);
-
-const replayEventsEpic$ = action$.pipe(
-    ofType("EVENT_REPLAY_STARTED"),
-    mergeMap(_ =>
-        ajax.post("api/event/replay", null, httpHeaders).pipe(
-            map(_ => actionsCreator.events.replay.succeed()),
-            catchError(error => of(actionsCreator.events.replay.failed(error)))
         )
     )
 );
@@ -1497,8 +1463,7 @@ const epics: Observable<Action>[] = [
     createItemEpic$,
     createItemSucceedEpic$,
     updateItemPriceEpic$,
-    supplyItemEpic$,
-    replayEventsEpic$
+    supplyItemEpic$
 ];
 
 merge(...epics).subscribe(dispatch);
