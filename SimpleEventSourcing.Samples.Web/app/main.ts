@@ -33,7 +33,7 @@ const eventHistoryService = {
 
 // models
 type Item = {
-    id: number;
+    id: string;
     name: string;
     price: number;
     remainingQuantity: number;
@@ -42,12 +42,12 @@ type Item = {
 type Cart = {
     items: {
         quantity: number,
-        itemId: number
+        itemId: string
     }[];
 };
 
 type Order = {
-    id: number;
+    id: string;
     number: number;
     createdDate: Date;
     isConfirmed: boolean;
@@ -55,12 +55,13 @@ type Order = {
     items: {
         quantity: number,
         price: number,
-        itemId: number
+        itemId: string
     }[];
 };
 
 type Event = {
-    id: number;
+    id: string;
+    number: number;
     eventName: string;
     data: any;
     metadata: {
@@ -107,11 +108,11 @@ type AppLoadFailedAction = {
 
 type AddItemInCartStartedAction = {
     type: "SHOP_ADD_ITEM_IN_CART_STARTED",
-    payload: { itemId: number, quantity: number }
+    payload: { itemId: string, quantity: number }
 };
 type AddItemInCartSucceedAction = {
     type: "SHOP_ADD_ITEM_IN_CART_SUCCEED",
-    payload: { itemId: number, quantity: number }
+    payload: { itemId: string, quantity: number }
 };
 type AddItemInCartFailedAction = {
     type: "SHOP_ADD_ITEM_IN_CART_FAILED",
@@ -120,11 +121,11 @@ type AddItemInCartFailedAction = {
 
 type RemoveItemFromCartStartedAction = {
     type: "SHOP_REMOVE_ITEM_FROM_CART_STARTED",
-    payload: { itemId: number, quantity: number }
+    payload: { itemId: string, quantity: number }
 };
 type RemoveItemFromCartSucceedAction = {
     type: "SHOP_REMOVE_ITEM_FROM_CART_SUCCEED",
-    payload: { itemId: number, quantity: number }
+    payload: { itemId: string, quantity: number }
 };
 type RemoveItemFromCartFailedAction = {
     type: "SHOP_REMOVE_ITEM_FROM_CART_FAILED",
@@ -155,12 +156,12 @@ type ResetCartFailedAction = {
 
 type UpsertCartAction = {
     type: "SHOP_UPSERT",
-    itemAndQuantity: { itemId: number, quantity: number }
+    itemAndQuantity: { itemId: string, quantity: number }
 };
 
 type ValidateOrderStartedAction = {
     type: "ORDER_VALIDATE_STARTED",
-    payload: { orderId: number }
+    payload: { orderId: string }
 };
 type ValidateOrderSucceedAction = {
     type: "ORDER_VALIDATE_SUCCEED"
@@ -172,7 +173,7 @@ type ValidateOrderFailedAction = {
 
 type CancelOrderStartedAction = {
     type: "ORDER_CANCEL_STARTED",
-    payload: { orderId: number }
+    payload: { orderId: string }
 };
 type CancelOrderSucceedAction = {
     type: "ORDER_CANCEL_SUCCEED"
@@ -201,7 +202,7 @@ type CreateItemFailedAction = {
 
 type UpdatePriceStartedAction = {
     type: "INVENTORY_UPDATE_PRICE_STARTED",
-    payload: { itemId: number, newPrice: number }
+    payload: { itemId: string, newPrice: number }
 };
 type UpdatePriceSucceedAction = {
     type: "INVENTORY_UPDATE_PRICE_SUCCEED"
@@ -213,11 +214,11 @@ type UpdatePriceFailedAction = {
 
 type SupplyItemStartedAction = {
     type: "INVENTORY_SUPPLY_ITEM_STARTED",
-    payload: { itemId: number, quantity: number }
+    payload: { itemId: string, quantity: number }
 };
 type SupplyItemSucceedAction = {
     type: "INVENTORY_SUPPLY_ITEM_SUCCEED",
-    itemId: number
+    itemId: string
 };
 type SupplyItemFailedAction = {
     type: "INVENTORY_SUPPLY_ITEM_FAILED",
@@ -283,17 +284,17 @@ const actionsCreator = {
     },
     shop: {
         addItemInCart: {
-            started: (payload: { itemId: number, quantity: number }) =>
+            started: (payload: { itemId: string, quantity: number }) =>
                 <AddItemInCartStartedAction>({ type: "SHOP_ADD_ITEM_IN_CART_STARTED", payload }),
-            succeed: (payload: { itemId: number, quantity: number }) =>
+            succeed: (payload: { itemId: string, quantity: number }) =>
                 <AddItemInCartSucceedAction>({ type: "SHOP_ADD_ITEM_IN_CART_SUCCEED", payload }),
             failed: (error: any) =>
                 <AddItemInCartFailedAction>({ type: "SHOP_ADD_ITEM_IN_CART_FAILED", error })
         },
         removeItemFromCart: {
-            started: (payload: { itemId: number, quantity: number }) =>
+            started: (payload: { itemId: string, quantity: number }) =>
                 <RemoveItemFromCartStartedAction>({ type: "SHOP_REMOVE_ITEM_FROM_CART_STARTED", payload }),
-            succeed: (payload: { itemId: number, quantity: number }) =>
+            succeed: (payload: { itemId: string, quantity: number }) =>
                 <RemoveItemFromCartSucceedAction>({ type: "SHOP_REMOVE_ITEM_FROM_CART_SUCCEED", payload }),
             failed: (error: any) =>
                 <RemoveItemFromCartFailedAction>({ type: "SHOP_REMOVE_ITEM_FROM_CART_FAILED", error })
@@ -308,7 +309,7 @@ const actionsCreator = {
             succeed: () => <ResetCartSucceedAction>({ type: "SHOP_RESET_CART_SUCCEED" }),
             failed: (error: any) => <ResetCartFailedAction>({ type: "SHOP_RESET_CART_FAILED", error })
         },
-        upsert: (itemAndQuantity: { quantity: number, itemId: number }) =>
+        upsert: (itemAndQuantity: { quantity: number, itemId: string }) =>
             <UpsertCartAction>({ type: "SHOP_UPSERT", itemAndQuantity })
     },
     orders: {
@@ -331,15 +332,15 @@ const actionsCreator = {
             failed: (error: any) => <CreateItemFailedAction>({ type: "INVENTORY_CREATE_ITEM_FAILED", error })
         },
         updatePrice: {
-            started: (payload: { itemId: number, newPrice: number }) =>
+            started: (payload: { itemId: string, newPrice: number }) =>
                 <UpdatePriceStartedAction>({ type: "INVENTORY_UPDATE_PRICE_STARTED", payload }),
             succeed: () => <UpdatePriceSucceedAction>({ type: "INVENTORY_UPDATE_PRICE_SUCCEED" }),
             failed: (error: any) => <UpdatePriceFailedAction>({ type: "INVENTORY_UPDATE_PRICE_FAILED", error })
         },
         supply: {
-            started: (payload: { itemId: number, quantity: number }) =>
+            started: (payload: { itemId: string, quantity: number }) =>
                 <SupplyItemStartedAction>({ type: "INVENTORY_SUPPLY_ITEM_STARTED", payload }),
-            succeed: (itemId: number) => <SupplyItemSucceedAction>({ type: "INVENTORY_SUPPLY_ITEM_SUCCEED", itemId }),
+            succeed: (itemId: string) => <SupplyItemSucceedAction>({ type: "INVENTORY_SUPPLY_ITEM_SUCCEED", itemId }),
             failed: (error: any) => <SupplyItemFailedAction>({ type: "INVENTORY_SUPPLY_ITEM_FAILED", error })
         },
         upsert: (item: Item) => <UpsertItemAction>({ type: "INVENTORY_UPSERT_ITEM", item })
@@ -375,8 +376,8 @@ type State = {
             price: FormPropertyState<number>,
             initialQuantity: FormPropertyState<number>
         },
-        updatePrice: { [itemId: number]: { price: FormPropertyState<number> } },
-        supply: { [itemId: number]: { quantity: FormPropertyState<number> } }
+        updatePrice: { [itemId: string]: { price: FormPropertyState<number> } },
+        supply: { [itemId: string]: { quantity: FormPropertyState<number> } }
     },
     previousState: any | undefined
 };
@@ -404,8 +405,8 @@ const initialState: State = {
                 errorLevel: "success"
             }
         },
-        updatePrice: [],
-        supply: []
+        updatePrice: {},
+        supply: {}
     },
     previousState: undefined
 };
@@ -425,8 +426,8 @@ const reduce = (state: State, action: Action): State => {
         };
     }
     if (action.type === "APP_LOAD_SUCCEED") {
-        const updatePriceForms: { [itemId: number]: { price: FormPropertyState<number> } } = [];
-        const supplyForms: { [itemId: number]: { quantity: FormPropertyState<number> } } = [];
+        const updatePriceForms: { [itemId: string]: { price: FormPropertyState<number> } } = {};
+        const supplyForms: { [itemId: string]: { quantity: FormPropertyState<number> } } = {};
 
         action.items.forEach(item => {
             updatePriceForms[item.id] = {
@@ -555,7 +556,7 @@ const reduce = (state: State, action: Action): State => {
         }
 
         if (action.formName === "updatePrice") {
-            const updatePriceForms: { [itemId: number]: { price: FormPropertyState<number> } } = [];
+            const updatePriceForms: { [itemId: string]: { price: FormPropertyState<number> } } = {};
 
             state.items.forEach(item => {
                 if (item.id === action.extendedProps.itemId) {
@@ -579,7 +580,7 @@ const reduce = (state: State, action: Action): State => {
         }
 
         if (action.formName === "supply") {
-            const supplyForms: { [itemId: number]: { quantity: FormPropertyState<number> } } = [];
+            const supplyForms: { [itemId: string]: { quantity: FormPropertyState<number> } } = {};
 
             state.items.forEach(item => {
                 if (item.id === action.extendedProps.itemId) {
@@ -690,7 +691,7 @@ const reduce = (state: State, action: Action): State => {
         };
     }
     if (action.type === "INVENTORY_SUPPLY_ITEM_SUCCEED") {
-        const supplyForms: { [itemId: number]: { quantity: FormPropertyState<number> } } = [];
+        const supplyForms: { [itemId: string]: { quantity: FormPropertyState<number> } } = {};
 
         state.items.forEach(item => {
             if (item.id === action.itemId) {
@@ -1287,11 +1288,11 @@ const eventsComponent$ = eventsChange$.pipe(
 
         return h("section", {}, [
             h("div", { className: "container" }, [
-                ...events.sort((a, b) => b.id - a.id).map(event => {
+                ...events.sort((a, b) => b.number - a.number).map(event => {
                     return h("div", { className: "card", key: event.id.toString(), style: { marginBottom: '10px' } }, [
                         h("div", { className: "card-header" }, [
                             h("div", { className: "card-header-title" }, [
-                                "Event #" + event.id + " - " + event.eventName
+                                "Event #" + event.number + " - " + event.eventName
                             ])
                         ]),
                         h("div", { className: "card-content" }, [

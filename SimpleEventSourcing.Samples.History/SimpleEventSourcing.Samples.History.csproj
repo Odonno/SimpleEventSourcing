@@ -16,6 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SimpleEventSourcing.Samples.Events\SimpleEventSourcing.Samples.Events.csproj" />
     <ProjectReference Include="..\SimpleEventSourcing\SimpleEventSourcing.csproj" />
   </ItemGroup>
 

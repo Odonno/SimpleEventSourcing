@@ -4,12 +4,18 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
 using System;
+using System.Linq;
 using Swashbuckle.AspNetCore.Swagger;
 using Tagada.Swagger;
-using SimpleEventSourcing.Samples.History;
+using Newtonsoft.Json;
+using Microsoft.Data.Sqlite;
+using System.Data;
+using System.Dynamic;
+using Dapper;
 using Newtonsoft.Json.Serialization;
+using SimpleEventSourcing.Samples.Events;
 
-namespace SimpleEventSourcing.Samples.Orders
+namespace SimpleEventSourcing.Samples.History
 {
     public class Program
     {
@@ -47,6 +53,8 @@ namespace SimpleEventSourcing.Samples.Orders
                         app.UseDeveloperExceptionPage();
                     }
 
+                    HandleDatabaseCreation();
+
                     app.Map("/api")
                         .Get("/events", GetAllEvents)
                         .AddSwagger()
@@ -61,18 +69,53 @@ namespace SimpleEventSourcing.Samples.Orders
                 .Run();
         }
 
+        private static SqliteConnection GetDatabaseConnection()
+        {
+            var connection = new SqliteConnection("Data Source=../EventsDatabase.db");
+            if (connection.State != ConnectionState.Open)
+                connection.Open();
+
+            return connection;
+        }
+
+        private static void HandleDatabaseCreation()
+        {
+            using (var connection = GetDatabaseConnection())
+            {
+                connection.Execute(
+                    @"
+                    CREATE TABLE IF NOT EXISTS [Event] (
+                        [Id] VARCHAR(36) NOT NULL PRIMARY KEY,
+                        [Number] INTEGER NOT NULL,
+                        [EventName] DATETIME NOT NULL,
+                        [Data] INTEGER NOT NULL,
+                        [Metadata] INTEGER NOT NULL
+                    );
+                    "
+                );
+            }
+        }
+
         public static Func<GetEventsQuery, IEnumerable<AppEvent>> GetAllEvents = _ =>
         {
-            return new List<AppEvent>(); // TODO : Get events from the EventStore
+            using (var connection = GetDatabaseConnection())
+            {
+                return connection
+                    .Query<EventDbo>("SELECT * FROM [Event] ORDER BY [Id] DESC")
+                    .Select(eventDbo =>
+                    {
+                        return new AppEvent
+                        {
+                            Id = eventDbo.Id,
+                            Number = eventDbo.Number,
+                            EventName = eventDbo.EventName,
+                            Data = JsonConvert.DeserializeObject<ExpandoObject>(eventDbo.Data),
+                            Metadata = JsonConvert.DeserializeObject<ExpandoObject>(eventDbo.Metadata)
+                        };
+                    })
+                    .ToList();
+            }
         };
-    }
-
-    public class EventDbo
-    {
-        public string Id { get; set; }
-        public string EventName { get; set; }
-        public string Data { get; set; }
-        public string Metadata { get; set; }
     }
 
     public class GetEventsQuery { }
