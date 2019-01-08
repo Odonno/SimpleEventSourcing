@@ -37,12 +37,23 @@ namespace SimpleEventSourcing.Samples.Inventory
                         c.GenerateTagadaSwaggerDoc();
                     });
                 })
+                .ConfigureServices(s =>
+                {
+                    s.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
+                    {
+                        builder.AllowAnyOrigin()
+                               .AllowAnyMethod()
+                               .AllowAnyHeader();
+                    }));
+                })
                 .Configure(app =>
                 {
                     if (HostingEnvironment.IsDevelopment())
                     {
                         app.UseDeveloperExceptionPage();
                     }
+
+                    app.UseCors("CorsPolicy");
 
                     HandleDatabaseCreation();
 
