@@ -8,7 +8,7 @@ using System.Linq;
 using Swashbuckle.AspNetCore.Swagger;
 using Tagada.Swagger;
 using Dapper;
-using SimpleEventSourcing.Samples.Events;
+using SimpleEventSourcing.Samples.EventStore;
 using static SimpleEventSourcing.Samples.Inventory.Configuration;
 
 namespace SimpleEventSourcing.Samples.Inventory
@@ -132,6 +132,7 @@ namespace SimpleEventSourcing.Samples.Inventory
 
     public class CreateItemCommand
     {
+        public string Id { get; set; }
         public string Name { get; set; }
         public decimal Price { get; set; }
         public int InitialQuantity { get; set; }

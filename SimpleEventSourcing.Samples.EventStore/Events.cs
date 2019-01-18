@@ -1,4 +1,4 @@
-﻿namespace SimpleEventSourcing.Samples.Events
+﻿namespace SimpleEventSourcing.Samples.EventStore
 {
     public class CartItemSelected
     {
@@ -28,6 +28,7 @@
 
     public class ItemRegistered
     {
+        public string Id { get; set; }
         public string Name { get; set; }
         public decimal Price { get; set; }
         public int InitialQuantity { get; set; }

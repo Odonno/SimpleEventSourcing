@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 
-namespace SimpleEventSourcing.Samples.Events
+namespace SimpleEventSourcing.Samples.EventStore
 {
     public class AppEventStore : EventStore<AppEvent>
     {
@@ -32,7 +32,6 @@ namespace SimpleEventSourcing.Samples.Events
                     @"
                     CREATE TABLE IF NOT EXISTS [Event] (
                         [Id] VARCHAR(36) NOT NULL PRIMARY KEY,
-                        [Number] INTEGER NOT NULL,
                         [EventName] DATETIME NOT NULL,
                         [Data] INTEGER NOT NULL,
                         [Metadata] INTEGER NOT NULL
@@ -59,18 +58,16 @@ namespace SimpleEventSourcing.Samples.Events
                 foreach (var @event in events)
                 {
                     string newEventId = Guid.NewGuid().ToString();
-                    int newEventNumber = maxEventNumber++;
 
                     connection.Execute(
                         @"
                         INSERT INTO [Event]
-                        ([Id], [Number], [EventName], [Data], [Metadata])
-                        VALUES (@Id, @Number, @EventName, @Data, @Metadata);
+                        ([Id], [EventName], [Data], [Metadata])
+                        VALUES (@Id, @EventName, @Data, @Metadata);
                         ",
                         new
                         {
                             Id = newEventId,
-                            Number = newEventNumber,
                             EventName = @event.EventName,
                             Data = JsonConvert.SerializeObject(@event.Data),
                             Metadata = JsonConvert.SerializeObject(@event.Metadata)
@@ -81,7 +78,6 @@ namespace SimpleEventSourcing.Samples.Events
                     persistedEvents.Add(new AppEvent
                     {
                         Id = newEventId,
-                        Number = newEventNumber,
                         EventName = @event.EventName,
                         Data = @event.Data,
                         Metadata = @event.Metadata

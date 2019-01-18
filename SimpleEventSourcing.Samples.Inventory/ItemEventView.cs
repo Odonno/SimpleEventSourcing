@@ -1,6 +1,6 @@
 ﻿using Converto;
 using Dapper;
-using SimpleEventSourcing.Samples.Events;
+using SimpleEventSourcing.Samples.EventStore;
 using System;
 using System.Linq;
 using System.Reactive.Linq;

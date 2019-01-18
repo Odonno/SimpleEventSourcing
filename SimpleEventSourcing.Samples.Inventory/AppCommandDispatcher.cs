@@ -1,4 +1,5 @@
-﻿using SimpleEventSourcing.Samples.Events;
+﻿using Converto;
+using SimpleEventSourcing.Samples.EventStore;
 using System;
 using System.Collections.Generic;
 
@@ -14,7 +15,7 @@ namespace SimpleEventSourcing.Samples.Inventory
                 new AppEvent
                 {
                     EventName = GetEventNameFromCommandName(command.GetType().Name),
-                    Data = command,
+                    Data = EnsureIdExists(command),
                     Metadata = new SimpleEventMetadata { CreatedDate = DateTime.Now }
                 }
             };
@@ -32,6 +33,20 @@ namespace SimpleEventSourcing.Samples.Inventory
                     return "ItemSupplied";
             }
             throw new NotImplementedException();
+        }
+
+        private object EnsureIdExists(object command)
+        {
+            if (command is CreateItemCommand createItemCommand && !IsValidGuid(createItemCommand.Id))
+            {
+                return command.With(new { Id = Guid.NewGuid().ToString() });
+            }
+            return command;
+        }
+
+        private bool IsValidGuid(string id)
+        {
+            return !string.IsNullOrWhiteSpace(id) && Guid.TryParse(id, out var _);
         }
     }
 }

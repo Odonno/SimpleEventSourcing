@@ -1,4 +1,4 @@
-﻿using SimpleEventSourcing.Samples.Events;
+﻿using SimpleEventSourcing.Samples.EventStore;
 using System;
 using System.Collections.Generic;
 

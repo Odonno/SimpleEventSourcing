@@ -13,7 +13,7 @@ using System.Data;
 using System.Dynamic;
 using Dapper;
 using Newtonsoft.Json.Serialization;
-using SimpleEventSourcing.Samples.Events;
+using SimpleEventSourcing.Samples.EventStore;
 
 namespace SimpleEventSourcing.Samples.History
 {
@@ -97,7 +97,6 @@ namespace SimpleEventSourcing.Samples.History
                     @"
                     CREATE TABLE IF NOT EXISTS [Event] (
                         [Id] VARCHAR(36) NOT NULL PRIMARY KEY,
-                        [Number] INTEGER NOT NULL,
                         [EventName] DATETIME NOT NULL,
                         [Data] INTEGER NOT NULL,
                         [Metadata] INTEGER NOT NULL
@@ -118,7 +117,6 @@ namespace SimpleEventSourcing.Samples.History
                         return new AppEvent
                         {
                             Id = eventDbo.Id,
-                            Number = eventDbo.Number,
                             EventName = eventDbo.EventName,
                             Data = JsonConvert.DeserializeObject<ExpandoObject>(eventDbo.Data),
                             Metadata = JsonConvert.DeserializeObject<ExpandoObject>(eventDbo.Metadata)

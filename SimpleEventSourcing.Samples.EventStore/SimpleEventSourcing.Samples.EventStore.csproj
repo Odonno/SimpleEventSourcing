@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
-    <AssemblyName>SimpleEventSourcing.Samples.Events</AssemblyName>
+    <AssemblyName>SimpleEventSourcing.Samples.EventStore</AssemblyName>
   </PropertyGroup>
 
   <ItemGroup>

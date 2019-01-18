@@ -8,7 +8,7 @@ using System.Linq;
 using Swashbuckle.AspNetCore.Swagger;
 using Tagada.Swagger;
 using Dapper;
-using SimpleEventSourcing.Samples.Events;
+using SimpleEventSourcing.Samples.EventStore;
 using static SimpleEventSourcing.Samples.Shop.Configuration;
 
 namespace SimpleEventSourcing.Samples.Shop
