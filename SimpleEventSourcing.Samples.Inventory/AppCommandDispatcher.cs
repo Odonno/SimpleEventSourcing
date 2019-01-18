@@ -2,6 +2,8 @@
 using SimpleEventSourcing.Samples.EventStore;
 using System;
 using System.Collections.Generic;
+using static System.Guid;
+using static SimpleEventSourcing.Extensions;
 
 namespace SimpleEventSourcing.Samples.Inventory
 {
@@ -39,14 +41,9 @@ namespace SimpleEventSourcing.Samples.Inventory
         {
             if (command is CreateItemCommand createItemCommand && !IsValidGuid(createItemCommand.Id))
             {
-                return command.With(new { Id = Guid.NewGuid().ToString() });
+                return command.With(new { Id = NewGuid().ToString() });
             }
             return command;
-        }
-
-        private bool IsValidGuid(string id)
-        {
-            return !string.IsNullOrWhiteSpace(id) && Guid.TryParse(id, out var _);
         }
     }
 }
