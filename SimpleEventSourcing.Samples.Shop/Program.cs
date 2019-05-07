@@ -8,17 +8,21 @@ using System.Linq;
 using Swashbuckle.AspNetCore.Swagger;
 using Tagada.Swagger;
 using Dapper;
-using SimpleEventSourcing.Samples.EventStore;
+using SimpleEventSourcing.Samples.Realtime;
+using Microsoft.AspNetCore.SignalR;
+using SimpleEventSourcing.CloudFirestore;
+using SimpleEventSourcing.Samples.Providers;
+using System.Threading.Tasks;
+using SimpleEventSourcing.Samples.Events;
+using Converto;
 using static SimpleEventSourcing.Samples.Shop.Configuration;
+using static SimpleEventSourcing.Extensions;
 
 namespace SimpleEventSourcing.Samples.Shop
 {
     public class Program
     {
         public static IHostingEnvironment HostingEnvironment { get; private set; }
-        public static readonly AppCommandDispatcher AppCommandDispatcher = new AppCommandDispatcher();
-        public static readonly AppEventStore AppEventStore = new AppEventStore(AppCommandDispatcher.ObserveEventAggregate());
-        public static readonly CartEventView CartEventView = new CartEventView(AppEventStore.ObserveEvent());
 
         public static void Main(string[] args)
         {
@@ -27,6 +31,7 @@ namespace SimpleEventSourcing.Samples.Shop
                 {
                     HostingEnvironment = builderContext.HostingEnvironment;
                 })
+                .ConfigureServices(s => s.AddSignalR())
                 .ConfigureServices(s => s.AddRouting())
                 .ConfigureServices(s => s.AddMvc())
                 .ConfigureServices(s =>
@@ -42,6 +47,7 @@ namespace SimpleEventSourcing.Samples.Shop
                     s.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
                     {
                         builder.AllowAnyOrigin()
+                               .AllowCredentials()
                                .AllowAnyMethod()
                                .AllowAnyHeader();
                     }));
@@ -57,14 +63,39 @@ namespace SimpleEventSourcing.Samples.Shop
 
                     HandleDatabaseCreation();
 
+                    var dataProvider = new CloudFirestoreProvider("event-sourcing-da233", "firebase.json");
+                    var streamProvider = new CloudFirestoreEventStreamProvider<StreamedEvent>(dataProvider.Database, new StreamedEventFirestoreConverter());
+
+                    var eventStore = EventStoreBuilder<StreamedEvent>
+                        .New()
+                        .WithStreamProvider(streamProvider)
+                        .WithApplyFunction(new AddItemInCartApplyFunction())
+                        .WithApplyFunction(new RemoveItemFromCartApplyFunction())
+                        .WithApplyFunction(new ResetCartApplyFunction())
+                        .WithApplyFunction(new CreateOrderFromCartApplyFunction())
+                        .Build();
+
+                    var cartEventView = new CartEventView(streamProvider);
+
                     app.Map("/api")
                         .Get("/cart", GetCart)
-                        .Post<AddItemInCartCommand>("/cart/addItem", AppCommandDispatcher.Dispatch)
-                        .Post<RemoveItemFromCartCommand>("/cart/removeItem", AppCommandDispatcher.Dispatch)
-                        .Post<ResetCartCommand>("/cart/reset", AppCommandDispatcher.Dispatch)
-                        .Post<CreateOrderFromCartCommand>("/order", AppCommandDispatcher.Dispatch)
+                        .Post<AddItemInCartCommand>("/cart/addItem", async (command) => await eventStore.ApplyAsync(command))
+                        .Post<RemoveItemFromCartCommand>("/cart/removeItem", async (command) => await eventStore.ApplyAsync(command))
+                        .Post<ResetCartCommand>("/cart/reset", async (command) => await eventStore.ApplyAsync(command))
+                        .Post<CreateOrderFromCartCommand>("/order", async (command) => await eventStore.ApplyAsync(command))
                         .AddSwagger()
                         .Use();
+
+                    app.UseSignalR(routes =>
+                    {
+                        routes.MapHub<CartHub>("/cart");
+                    });
+
+                    cartEventView.ObserveEntityChange().Subscribe(async entity =>
+                    {
+                        var hub = app.ApplicationServices.GetRequiredService<IHubContext<CartHub>>();
+                        await hub.Clients.All.SendAsync("Sync", entity);
+                    });
 
                     app.UseSwaggerUI(c =>
                     {
@@ -115,21 +146,80 @@ namespace SimpleEventSourcing.Samples.Shop
         public int Quantity { get; set; }
     }
 
+    public class CartHub : SyncEntityHub<ItemAndQuantity> { }
+
     public class GetCartQuery { }
 
     public class AddItemInCartCommand
     {
         public string ItemId { get; set; }
-        public int Quantity { get; set; }
+        public long Quantity { get; set; }
     }
 
     public class RemoveItemFromCartCommand
     {
         public string ItemId { get; set; }
-        public int Quantity { get; set; }
+        public long Quantity { get; set; }
     }
 
     public class ResetCartCommand { }
 
     public class CreateOrderFromCartCommand { }
+
+    public class AddItemInCartApplyFunction : IApplyFunction<AddItemInCartCommand, StreamedEvent>
+    {
+        public async Task ExecuteAsync(AddItemInCartCommand command, IEventStreamProvider<StreamedEvent> eventStreamProvider)
+        {
+            var @event = command.ConvertTo<CartItemSelected>();
+
+            string streamId = "cart";
+            var stream = await eventStreamProvider.GetStreamAsync(streamId);
+            var currentPosition = await stream.GetCurrentPositionAsync();
+
+            var events = List(@event);
+            await stream.AppendEventsAsync(CreateStreamedEvents(streamId, currentPosition, events));
+        }
+    }
+    public class RemoveItemFromCartApplyFunction : IApplyFunction<RemoveItemFromCartCommand, StreamedEvent>
+    {
+        public async Task ExecuteAsync(RemoveItemFromCartCommand command, IEventStreamProvider<StreamedEvent> eventStreamProvider)
+        {
+            var @event = command.ConvertTo<CartItemUnselected>();
+
+            string streamId = "cart";
+            var stream = await eventStreamProvider.GetStreamAsync(streamId);
+            var currentPosition = await stream.GetCurrentPositionAsync();
+
+            var events = List(@event);
+            await stream.AppendEventsAsync(CreateStreamedEvents(streamId, currentPosition, events));
+        }
+    }
+    public class ResetCartApplyFunction : IApplyFunction<ResetCartCommand, StreamedEvent>
+    {
+        public async Task ExecuteAsync(ResetCartCommand command, IEventStreamProvider<StreamedEvent> eventStreamProvider)
+        {
+            var @event = command.ConvertTo<CartReseted>();
+
+            string streamId = "cart";
+            var stream = await eventStreamProvider.GetStreamAsync(streamId);
+            var currentPosition = await stream.GetCurrentPositionAsync();
+
+            var events = List(@event);
+            await stream.AppendEventsAsync(CreateStreamedEvents(streamId, currentPosition, events));
+        }
+    }
+    public class CreateOrderFromCartApplyFunction : IApplyFunction<CreateOrderFromCartCommand, StreamedEvent>
+    {
+        public async Task ExecuteAsync(CreateOrderFromCartCommand command, IEventStreamProvider<StreamedEvent> eventStreamProvider)
+        {
+            var @event = command.ConvertTo<OrderedFromCart>();
+
+            string streamId = "cart";
+            var stream = await eventStreamProvider.GetStreamAsync(streamId);
+            var currentPosition = await stream.GetCurrentPositionAsync();
+
+            var events = List(@event);
+            await stream.AppendEventsAsync(CreateStreamedEvents(streamId, currentPosition, events));
+        }
+    }
 }

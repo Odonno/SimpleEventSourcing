@@ -1,0 +1,12 @@
+{
+  "type": "service_account",
+  "project_id": "event-sourcing-da233",
+  "private_key_id": "efc33165f3728012ae76ad49045d6c347d6bc52b",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDLtB7FEu2ClL9h\nDCR0arVDslJr9MUbLY2RTLXKO2vaoMc5r7Cw14VwVwhlSbRr82nOYEJC2s8Z1ZzV\n9kMhWL0V7A/nwxCBXm0+yyCPDC0BC8dVY2MqlYCyz7Fsmoc42GWWkJYVUkV9Yoqq\nCaQ2lT72dqb5S4ueeNNDQHvwF/6D8SSZxtadaijERssLI5Ls9q1dVz13sQMQfya6\n+if4V8iNWQWjYYADeQpTt4zyx2lBf6kEjb5cqoNfK/19PKMCszNiFq2oKAvYlSQv\nlFMG+6wFeHuDYlb0/B/XseVx0xzgwwkHHlEtDCLhsGY6mX9ILkNNH74EBY80o6N9\njwEhL9PJAgMBAAECggEAFCFAP9YHVeB11RT1GUgI56AHQxcqJJhoz/4A954i91+X\nWx0Ah0k/rNf87Wgjhd4aYO7kPWUQEuEoIYC3e451s7qN4Seb9EeCNjKujKmgXOUZ\naq0VT0+ngIQZEr673s3g+XMKUcsShjnRssyccgRnohrG6gXMI08/WVBVrxE/8TEb\nJVg1MiKuy22ZsHaT5av7AhHBK8htT8Pze5PL29hZGxUlW2rIH+Wzz4VS9uzUgfqb\nSYMA4eryr83pfvNWYRxIBSbQl4oaS/WPKFO42744hhKTpeeSae6c4BAOWZhIBQC2\nJR9asU66S79OgrVg2ICXlRw6O2cLYvwGtVzs+ZXwTQKBgQDoQBAN9w2D5FxkNA3E\n0ISISYojH1f5ybKNR52XwZzqCQU3SmVOWmVrsFU5gfTm0YEVoKUvlCQOTH1YsYx8\nYcogS76BH2Whu2IS8IR8HvzMCxvMAeAnmtYLagUH4O/GGbewIfyaJstErWQXCldA\nyCpPSjfJfvMRG7en/7jyVi4cTwKBgQDgiMCNZWvaJD6vYr38HMsVYe6gdRZ3aJyx\ntqQr+8xDgitxdaoIQqo/hhMvDSpxg32cJdLu6BogDo+MnBAS2LmYep8mqCTcN6L3\n0iA/6kj+WcRNCNG3jC16sDsZZk3Ut6bpnZd274jCfTsT70PbKAixeGEVWza442kC\nl191dGqQZwKBgQCmAmy3XrllZkz4PxD8dsPVGyPHWTcsUBT10ZP/DqDX1NzKmb3y\nFMFcCW3RrmfcuTIYwHxyluRy6A/M3xR5L/knvpyMdWHTCjrfKNa6VfgC7YnP+CM+\ni/mlrQGtkQYyxt065ABIO6SeEYZyxax6nNlJVdasi7a4quRLDIophpptFwKBgQCH\nrBotVgtFVIFMGK4TmJJd6T73VcitfliwSVwJ96wFXrJBbIfBVgbpO2p8E8iBrqJH\np9M86KJgnGvA2swblzkOGYnxIcikCDpA5Ib4F+jjR/qFUb7m2ZzhdXtAbcC5t/7z\nSnYrN7G7U1BPS1QFKLuYANUowmTecwsQtcbIgf+iIQKBgQCLb1HxlrFQIQhTWIWT\nfi+Q72WgrbrKXv2ak/UNni4VfwhjsKzA/vwdbkj3tgYWxz1PeoubkV+tdHiNifGG\nKZ9XbqfaK68bUQBt0lumWERFoPgnrF4oHg0S6a7j3Ys49oROeUcV8ATYoICSqNzV\nkzlOlcVkpp88jkOXF1QDgytmRQ==\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-ynxh3@event-sourcing-da233.iam.gserviceaccount.com",
+  "client_id": "110916690245124479706",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-ynxh3%40event-sourcing-da233.iam.gserviceaccount.com"
+}

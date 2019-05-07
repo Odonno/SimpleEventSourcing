@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageId>Simple.EventSourcing.InMemory</PackageId>
+    <Version>1.0</Version>
+    <Authors>David Bottiau</Authors>
+    <Description>Event Sourcing made simple using Reactive Extensions - InMemory provider</Description>
+    <PackageProjectUrl>https://github.com/Odonno/SimpleEventSourcing</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/Odonno/SimpleEventSourcing</RepositoryUrl>
+    <Company />
+    <PackageIconUrl>https://raw.githubusercontent.com/Odonno/SimpleEventSourcing/master/images/logo.png</PackageIconUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SimpleEventSourcing\SimpleEventSourcing.csproj" />
+  </ItemGroup>
+
+</Project>

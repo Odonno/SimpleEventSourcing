@@ -303,3 +303,4 @@ __pycache__/
 SimpleEventSourcing.Samples.Web/app/**/*.js
 SimpleEventSourcing.Samples.Web/app/**/*.js.map
 dist/
+**/*.db

@@ -8,17 +8,22 @@ using System.Linq;
 using Swashbuckle.AspNetCore.Swagger;
 using Tagada.Swagger;
 using Dapper;
-using SimpleEventSourcing.Samples.EventStore;
+using SimpleEventSourcing.Samples.Realtime;
+using Microsoft.AspNetCore.SignalR;
+using SimpleEventSourcing.CloudFirestore;
+using System.Threading.Tasks;
+using Converto;
+using SimpleEventSourcing.Samples.Events;
+using SimpleEventSourcing.Samples.Providers;
 using static SimpleEventSourcing.Samples.Inventory.Configuration;
+using static System.Guid;
+using static SimpleEventSourcing.Extensions;
 
 namespace SimpleEventSourcing.Samples.Inventory
 {
     public class Program
     {
         public static IHostingEnvironment HostingEnvironment { get; private set; }
-        public static readonly AppCommandDispatcher AppCommandDispatcher = new AppCommandDispatcher();
-        public static readonly AppEventStore AppEventStore = new AppEventStore(AppCommandDispatcher.ObserveEventAggregate());
-        public static readonly ItemEventView ItemEventView = new ItemEventView(AppEventStore.ObserveEvent());
 
         public static void Main(string[] args)
         {
@@ -27,6 +32,7 @@ namespace SimpleEventSourcing.Samples.Inventory
                 {
                     HostingEnvironment = builderContext.HostingEnvironment;
                 })
+                .ConfigureServices(s => s.AddSignalR())
                 .ConfigureServices(s => s.AddRouting())
                 .ConfigureServices(s => s.AddMvc())
                 .ConfigureServices(s =>
@@ -42,6 +48,7 @@ namespace SimpleEventSourcing.Samples.Inventory
                     s.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
                     {
                         builder.AllowAnyOrigin()
+                               .AllowCredentials()
                                .AllowAnyMethod()
                                .AllowAnyHeader();
                     }));
@@ -57,13 +64,37 @@ namespace SimpleEventSourcing.Samples.Inventory
 
                     HandleDatabaseCreation();
 
+                    var dataProvider = new CloudFirestoreProvider("event-sourcing-da233", "firebase.json");
+                    var cloudFirestoreStreamProvider = new CloudFirestoreEventStreamProvider<StreamedEvent>(dataProvider.Database, new StreamedEventFirestoreConverter());
+
+                    var eventStore = EventStoreBuilder<StreamedEvent>
+                        .New()
+                        .WithStreamProvider(cloudFirestoreStreamProvider)
+                        .WithApplyFunction(new CreateItemApplyFunction())
+                        .WithApplyFunction(new UpdateItemPriceApplyFunction())
+                        .WithApplyFunction(new SupplyItemApplyFunction())
+                        .Build();
+
+                    var itemEventView = new ItemEventView(cloudFirestoreStreamProvider);
+
                     app.Map("/api")
                         .Get("/all", GetAllItems)
-                        .Post<CreateItemCommand>("/create", AppCommandDispatcher.Dispatch)
-                        .Post<UpdateItemPriceCommand>("/updatePrice", AppCommandDispatcher.Dispatch)
-                        .Post<SupplyItemCommand>("/supply", AppCommandDispatcher.Dispatch)
+                        .Post<CreateItemCommand>("/create", async (command) => await eventStore.ApplyAsync(command))
+                        .Post<UpdateItemPriceCommand>("/updatePrice", async (command) => await eventStore.ApplyAsync(command))
+                        .Post<SupplyItemCommand>("/supply", async (command) => await eventStore.ApplyAsync(command))
                         .AddSwagger()
                         .Use();
+
+                    app.UseSignalR(routes =>
+                    {
+                        routes.MapHub<ItemHub>("/item");
+                    });
+
+                    itemEventView.ObserveEntityChange().Subscribe(async entity =>
+                    {
+                        var hub = app.ApplicationServices.GetRequiredService<IHubContext<ItemHub>>();
+                        await hub.Clients.All.SendAsync("Sync", entity);
+                    });
 
                     app.UseSwaggerUI(c =>
                     {
@@ -128,25 +159,70 @@ namespace SimpleEventSourcing.Samples.Inventory
         public int RemainingQuantity { get; set; }
     }
 
+    public class ItemHub : SyncEntityHub<Item> { }
+
     public class GetItemsQuery { }
 
     public class CreateItemCommand
     {
-        public string Id { get; set; }
         public string Name { get; set; }
-        public decimal Price { get; set; }
-        public int InitialQuantity { get; set; }
+        public double Price { get; set; }
+        public long InitialQuantity { get; set; }
     }
 
     public class UpdateItemPriceCommand
     {
         public string ItemId { get; set; }
-        public decimal NewPrice { get; set; }
+        public double NewPrice { get; set; }
     }
 
     public class SupplyItemCommand
     {
         public string ItemId { get; set; }
-        public int Quantity { get; set; }
+        public long Quantity { get; set; }
+    }
+
+    public class CreateItemApplyFunction : IApplyFunction<CreateItemCommand, StreamedEvent>
+    {
+        public async Task ExecuteAsync(CreateItemCommand command, IEventStreamProvider<StreamedEvent> eventStreamProvider)
+        {
+            // TODO : Create ConvertWith function
+            var @event = command.ConvertTo<ItemRegistered>().With(new { Id = NewGuid().ToString() });
+
+            string streamId = $"item-{@event.Id}";
+            var stream = await eventStreamProvider.GetStreamAsync(streamId);
+            var currentPosition = await stream.GetCurrentPositionAsync();
+
+            var events = List(@event);
+            await stream.AppendEventsAsync(CreateStreamedEvents(streamId, currentPosition, events));
+        }
+    }
+    public class UpdateItemPriceApplyFunction : IApplyFunction<UpdateItemPriceCommand, StreamedEvent>
+    {
+        public async Task ExecuteAsync(UpdateItemPriceCommand command, IEventStreamProvider<StreamedEvent> eventStreamProvider)
+        {
+            var @event = command.ConvertTo<ItemPriceUpdated>();
+
+            string streamId = $"item-{@event.ItemId}";
+            var stream = await eventStreamProvider.GetStreamAsync(streamId);
+            var currentPosition = await stream.GetCurrentPositionAsync();
+
+            var events = List(@event);
+            await stream.AppendEventsAsync(CreateStreamedEvents(streamId, currentPosition, events));
+        }
+    }
+    public class SupplyItemApplyFunction : IApplyFunction<SupplyItemCommand, StreamedEvent>
+    {
+        public async Task ExecuteAsync(SupplyItemCommand command, IEventStreamProvider<StreamedEvent> eventStreamProvider)
+        {
+            var @event = command.ConvertTo<ItemSupplied>();
+
+            string streamId = $"item-{@event.ItemId}";
+            var stream = await eventStreamProvider.GetStreamAsync(streamId);
+            var currentPosition = await stream.GetCurrentPositionAsync();
+
+            var events = List(@event);
+            await stream.AppendEventsAsync(CreateStreamedEvents(streamId, currentPosition, events));
+        }
     }
 }

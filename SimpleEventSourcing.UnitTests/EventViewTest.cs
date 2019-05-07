@@ -1,6 +1,8 @@
-﻿using System;
+﻿using SimpleEventSourcing.InMemory;
+using SimpleEventSourcing.UnitTests.Models;
+using System;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace SimpleEventSourcing.UnitTests
@@ -11,8 +13,8 @@ namespace SimpleEventSourcing.UnitTests
         public void CanReadInitialState()
         {
             // Arrange
-            var eventSubject = new Subject<SimpleEvent>();
-            var eventView = new TotalCostCartEventView(eventSubject.AsObservable());
+            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+            var eventView = new TotalCostCartEventView(streamProvider);
 
             // Act
 
@@ -21,11 +23,20 @@ namespace SimpleEventSourcing.UnitTests
         }
 
         [Fact]
-        public void CanObserveStateWithEventsOfTheSameType()
+        public async Task CanObserveStateWithEventsOfTheSameType()
         {
             // Arrange
-            var eventSubject = new Subject<SimpleEvent>();
-            var eventView = new TotalCostCartEventView(eventSubject.AsObservable());
+            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+
+            var eventStore = EventStoreBuilder<StreamedEvent>
+                .New()
+                .WithStreamProvider(streamProvider)
+                .WithApplyFunction(new AddItemInCartApplyFunction())
+                .WithApplyFunction(new RemoveItemFromCartApplyFunction())
+                .WithApplyFunction(new ResetCartApplyFunction())
+                .Build();
+
+            var eventView = new TotalCostCartEventView(streamProvider);
 
             // Act
             int eventListenedCount = 0;
@@ -38,23 +49,15 @@ namespace SimpleEventSourcing.UnitTests
                     lastState = state;
                 });
 
-            eventSubject.OnNext(new SimpleEvent
+            await eventStore.ApplyAsync(new AddItemInCartCommand
             {
-                EventName = nameof(AddItemInCartCommand),
-                Data = new AddItemInCartCommand
-                {
-                    ItemName = "Book",
-                    UnitCost = 45
-                }
+                ItemName = "Book",
+                UnitCost = 45
             });
-            eventSubject.OnNext(new SimpleEvent
+            await eventStore.ApplyAsync(new AddItemInCartCommand
             {
-                EventName = nameof(AddItemInCartCommand),
-                Data = new AddItemInCartCommand
-                {
-                    ItemName = "Book",
-                    UnitCost = 20
-                }
+                ItemName = "Book",
+                UnitCost = 20
             });
 
             // Assert
@@ -64,11 +67,20 @@ namespace SimpleEventSourcing.UnitTests
         }
 
         [Fact]
-        public void CanObserveStateWithEventsOfDifferentTypes()
+        public async Task CanObserveStateWithEventsOfDifferentTypes()
         {
             // Arrange
-            var eventSubject = new Subject<SimpleEvent>();
-            var eventView = new TotalCostCartEventView(eventSubject.AsObservable());
+            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+
+            var eventStore = EventStoreBuilder<StreamedEvent>
+                .New()
+                .WithStreamProvider(streamProvider)
+                .WithApplyFunction(new AddItemInCartApplyFunction())
+                .WithApplyFunction(new RemoveItemFromCartApplyFunction())
+                .WithApplyFunction(new ResetCartApplyFunction())
+                .Build();
+
+            var eventView = new TotalCostCartEventView(streamProvider);
 
             // Act
             int eventListenedCount = 0;
@@ -81,20 +93,12 @@ namespace SimpleEventSourcing.UnitTests
                     lastState = state;
                 });
 
-            eventSubject.OnNext(new SimpleEvent
+            await eventStore.ApplyAsync(new AddItemInCartCommand
             {
-                EventName = nameof(AddItemInCartCommand),
-                Data = new AddItemInCartCommand
-                {
-                    ItemName = "Book",
-                    UnitCost = 45
-                }
+                ItemName = "Book",
+                UnitCost = 45
             });
-            eventSubject.OnNext(new SimpleEvent
-            {
-                EventName = nameof(ResetCartCommand),
-                Data = new ResetCartCommand()
-            });
+            await eventStore.ApplyAsync(new ResetCartCommand());
 
             // Assert
             Assert.Equal(2, eventListenedCount);
@@ -103,12 +107,21 @@ namespace SimpleEventSourcing.UnitTests
         }
 
         [Fact]
-        public void CanObserveStateOfMultipleEventViews()
+        public async Task CanObserveStateOfMultipleEventViews()
         {
             // Arrange
-            var eventSubject = new Subject<SimpleEvent>();
-            var totalCostCartEventView = new TotalCostCartEventView(eventSubject.AsObservable());
-            var ordersCartEventView = new OrdersCartEventView(eventSubject.AsObservable());
+            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+
+            var eventStore = EventStoreBuilder<StreamedEvent>
+                .New()
+                .WithStreamProvider(streamProvider)
+                .WithApplyFunction(new AddItemInCartApplyFunction())
+                .WithApplyFunction(new RemoveItemFromCartApplyFunction())
+                .WithApplyFunction(new ResetCartApplyFunction())
+                .Build();
+
+            var totalCostCartEventView = new TotalCostCartEventView(streamProvider);
+            var ordersCartEventView = new OrdersCartEventView(streamProvider);
 
             // Act
             TotalCostCartState lastTotalCostCartState = null;
@@ -125,23 +138,15 @@ namespace SimpleEventSourcing.UnitTests
                     lastOrdersCartState = state;
                 });
 
-            eventSubject.OnNext(new SimpleEvent
+            await eventStore.ApplyAsync(new AddItemInCartCommand
             {
-                EventName = nameof(AddItemInCartCommand),
-                Data = new AddItemInCartCommand
-                {
-                    ItemName = "Book",
-                    UnitCost = 45
-                }
+                ItemName = "Book",
+                UnitCost = 45
             });
-            eventSubject.OnNext(new SimpleEvent
+            await eventStore.ApplyAsync(new AddItemInCartCommand
             {
-                EventName = nameof(AddItemInCartCommand),
-                Data = new AddItemInCartCommand
-                {
-                    ItemName = "Book",
-                    UnitCost = 20
-                }
+                ItemName = "Book",
+                UnitCost = 20
             });
 
             // Assert
@@ -156,11 +161,20 @@ namespace SimpleEventSourcing.UnitTests
         }
 
         [Fact]
-        public void CanObserveStatePartially()
+        public async Task CanObserveStatePartially()
         {
             // Arrange
-            var eventSubject = new Subject<SimpleEvent>();
-            var ordersCartEventView = new OrdersCartEventView(eventSubject.AsObservable());
+            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+
+            var eventStore = EventStoreBuilder<StreamedEvent>
+                .New()
+                .WithStreamProvider(streamProvider)
+                .WithApplyFunction(new AddItemInCartApplyFunction())
+                .WithApplyFunction(new RemoveItemFromCartApplyFunction())
+                .WithApplyFunction(new ResetCartApplyFunction())
+                .Build();
+
+            var ordersCartEventView = new OrdersCartEventView(streamProvider);
 
             // Act
             int lastNumberOfItems = 0;
@@ -171,24 +185,16 @@ namespace SimpleEventSourcing.UnitTests
                     lastNumberOfItems = numberOfItems;
                 });
 
-            eventSubject.OnNext(new SimpleEvent
+            await eventStore.ApplyAsync(new AddItemInCartCommand
             {
-                EventName = nameof(AddItemInCartCommand),
-                Data = new AddItemInCartCommand
-                {
-                    ItemName = "Book",
-                    UnitCost = 45
-                }
+                ItemName = "Book",
+                UnitCost = 45
             });
-            eventSubject.OnNext(new SimpleEvent
+            await eventStore.ApplyAsync(new AddItemInCartCommand
             {
-                EventName = nameof(AddItemInCartCommand),
-                Data = new AddItemInCartCommand
-                {
-                    ItemName = "Book",
-                    UnitCost = 20,
-                    NumberOfUnits = 2
-                }
+                ItemName = "Book",
+                UnitCost = 20,
+                NumberOfUnits = 2
             });
 
             // Assert

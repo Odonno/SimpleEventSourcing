@@ -1,6 +1,6 @@
 ﻿using Converto;
 using Dapper;
-using SimpleEventSourcing.Samples.EventStore;
+using SimpleEventSourcing.Samples.Events;
 using System;
 using System.Linq;
 using System.Reactive.Linq;
@@ -9,12 +9,30 @@ using static SimpleEventSourcing.Samples.Inventory.Configuration;
 
 namespace SimpleEventSourcing.Samples.Inventory
 {
-    public class ItemEventView : EventView<SimpleEvent>
+    public class ItemEventView : EventView<StreamedEvent>
     {
         private readonly Subject<Item> _updatedEntitySubject = new Subject<Item>();
-
-        public ItemEventView(IObservable<SimpleEvent> events) : base(events)
+        
+        public ItemEventView(IEventStreamProvider<StreamedEvent> streamProvider) : base(streamProvider)
         {
+            // TODO : Extract method
+            // Detect new streams
+            if (_streamProvider is IRealtimeEventStreamProvider<StreamedEvent> realtimeStreamProvider)
+            {
+                realtimeStreamProvider.DetectNewStreams().Subscribe(stream =>
+                {
+                    if (!stream.Id.StartsWith("item-"))
+                        return;
+
+                    if (stream is IRealtimeEventStream<StreamedEvent> realtimeItemStream)
+                    {
+                        realtimeItemStream.ListenForNewEvents(true).Subscribe(@event =>
+                        {
+                            Handle(@event);
+                        });
+                    }
+                });
+            }
         }
 
         public IObservable<Item> ObserveEntityChange()
@@ -22,7 +40,7 @@ namespace SimpleEventSourcing.Samples.Inventory
             return _updatedEntitySubject.DistinctUntilChanged();
         }
 
-        protected override void Handle(SimpleEvent @event, bool replayed = false)
+        protected override void Handle(StreamedEvent @event, bool replayed = false)
         {
             if (@event.EventName == nameof(ItemRegistered))
             {
@@ -33,12 +51,12 @@ namespace SimpleEventSourcing.Samples.Inventory
                     var newItem = connection.Query<ItemDbo>(
                         @"
                         INSERT INTO [Item] 
-                        ([Name], [Price], [RemainingQuantity])
-                        VALUES (@Name, @Price, @InitialQuantity);
+                        ([Id], [Name], [Price], [RemainingQuantity])
+                        VALUES (@Id, @Name, @Price, @InitialQuantity);
 
-                        SELECT * FROM [Item] ORDER BY [Id] DESC LIMIT 1;
+                        SELECT * FROM [Item] WHERE [Id] = @Id;
                         ",
-                        new { data.Name, data.Price, data.InitialQuantity }
+                        new { data.Id, data.Name, data.Price, data.InitialQuantity }
                     )
                     .Single();
 

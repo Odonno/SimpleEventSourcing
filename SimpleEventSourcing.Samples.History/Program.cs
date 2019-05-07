@@ -13,7 +13,6 @@ using System.Data;
 using System.Dynamic;
 using Dapper;
 using Newtonsoft.Json.Serialization;
-using SimpleEventSourcing.Samples.EventStore;
 
 namespace SimpleEventSourcing.Samples.History
 {
@@ -51,6 +50,7 @@ namespace SimpleEventSourcing.Samples.History
                     s.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
                     {
                         builder.AllowAnyOrigin()
+                               .AllowCredentials()
                                .AllowAnyMethod()
                                .AllowAnyHeader();
                     }));
@@ -106,7 +106,7 @@ namespace SimpleEventSourcing.Samples.History
             }
         }
 
-        public static Func<GetEventsQuery, IEnumerable<AppEvent>> GetAllEvents = _ =>
+        public static Func<GetEventsQuery, IEnumerable<StreamedEvent>> GetAllEvents = _ =>
         {
             using (var connection = GetDatabaseConnection())
             {
@@ -114,17 +114,25 @@ namespace SimpleEventSourcing.Samples.History
                     .Query<EventDbo>("SELECT * FROM [Event] ORDER BY [Id] DESC")
                     .Select(eventDbo =>
                     {
-                        return new AppEvent
+                        return new StreamedEvent
                         {
                             Id = eventDbo.Id,
                             EventName = eventDbo.EventName,
                             Data = JsonConvert.DeserializeObject<ExpandoObject>(eventDbo.Data),
-                            Metadata = JsonConvert.DeserializeObject<ExpandoObject>(eventDbo.Metadata)
+                            Metadata = JsonConvert.DeserializeObject<StreamedEventMetadata>(eventDbo.Metadata)
                         };
                     })
                     .ToList();
             }
         };
+    }
+
+    public class EventDbo
+    {
+        public string Id { get; set; }
+        public string EventName { get; set; }
+        public string Data { get; set; }
+        public string Metadata { get; set; }
     }
 
     public class GetEventsQuery { }

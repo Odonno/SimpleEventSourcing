@@ -1,7 +1,7 @@
 ﻿using Converto;
 using Dapper;
 using Newtonsoft.Json;
-using SimpleEventSourcing.Samples.EventStore;
+using SimpleEventSourcing.Samples.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,11 +11,11 @@ using static SimpleEventSourcing.Samples.Orders.Configuration;
 
 namespace SimpleEventSourcing.Samples.Orders
 {
-    public class OrderEventView : EventView<SimpleEvent>
+    public class OrderEventView : EventView<StreamedEvent>
     {
         private readonly Subject<Order> _updatedEntitySubject = new Subject<Order>();
 
-        public OrderEventView(IObservable<SimpleEvent> events) : base(events)
+        public OrderEventView(IEventStreamProvider<StreamedEvent> streamProvider) : base(streamProvider)
         {
         }
 
@@ -24,22 +24,15 @@ namespace SimpleEventSourcing.Samples.Orders
             return _updatedEntitySubject.DistinctUntilChanged();
         }
 
-        protected override void Handle(SimpleEvent @event, bool replayed = false)
+        protected override void Handle(StreamedEvent @event, bool replayed = false)
         {
             if (@event.EventName == nameof(OrderedFromCart))
             {
                 var data = @event.Data.ConvertTo<OrderedFromCart>();
-                var metadata = @event.Metadata.ConvertTo<SimpleEventMetadata>();
+                var metadata = @event.Metadata.ConvertTo<StreamedEventMetadata>();
 
                 using (var connection = GetDatabaseConnection())
                 {
-                    //var cart = connection
-                    //    .Query<ItemAndQuantity>("SELECT * FROM [Cart]")
-                    //    .ToList();
-                    //var itemsToOrder = connection
-                    //    .Query<Item>("SELECT * FROM [Item] WHERE [Id] IN @Ids", new { Ids = cart.Select(c => c.ItemId) })
-                    //    .ToList();
-
                     var newOrder = connection.Query<OrderDbo>(
                         @"
                         INSERT INTO [Order] 
@@ -49,35 +42,11 @@ namespace SimpleEventSourcing.Samples.Orders
                         SELECT * FROM [Order] ORDER BY [Id] DESC LIMIT 1;
                         ",
                         new {
-                            metadata.CreatedDate,
+                            metadata.CreatedAt,
                             Items = JsonConvert.SerializeObject(new List<OrderedItem>()) // TODO
                         }
                     )
                     .Single();
-
-                    //connection.Execute(
-                    //    @"
-                    //    INSERT INTO [ItemOrdered] 
-                    //    ([OrderId], [ItemId], [Quantity], [Price])
-                    //    VALUES (@OrderId, @ItemId, @Quantity, @Price)
-                    //    ",
-                    //    cart.Select(c =>
-                    //    {
-                    //        return new
-                    //        {
-                    //            OrderId = newOrder.Id,
-                    //            c.ItemId,
-                    //            c.Quantity,
-                    //            itemsToOrder.Single(item => item.Id == c.ItemId).Price
-                    //        };
-                    //    })
-                    //);
-
-                    //var newOrderedItems = connection.Query<ItemOrderedDbo>(
-                    //    "SELECT * FROM [ItemOrdered] WHERE [OrderId] = @OrderId",
-                    //    new { OrderId = newOrder.Id }
-                    //)
-                    //.ToList();
 
                     if (!replayed)
                     {
@@ -89,16 +58,6 @@ namespace SimpleEventSourcing.Samples.Orders
                             IsConfirmed = newOrder.IsConfirmed,
                             IsCanceled = newOrder.IsCanceled,
                             Items = JsonConvert.DeserializeObject<IEnumerable<OrderedItem>>(newOrder.Items)
-                            //Items = newOrderedItems
-                            //    .Select(i =>
-                            //    {
-                            //        return new ItemAndPriceAndQuantity
-                            //        {
-                            //            ItemId = i.ItemId,
-                            //            Price = Convert.ToDecimal(i.Price),
-                            //            Quantity = i.Quantity
-                            //        };
-                            //    })
                         });
                     }
                 }
@@ -123,12 +82,6 @@ namespace SimpleEventSourcing.Samples.Orders
                     )
                     .Single();
 
-                    //var orderedItems = connection.Query<ItemOrderedDbo>(
-                    //    "SELECT * FROM [ItemOrdered] WHERE [OrderId] = @OrderId",
-                    //    new { data.OrderId }
-                    //)
-                    //.ToList();
-
                     if (!replayed)
                     {
                         _updatedEntitySubject.OnNext(new Order
@@ -139,16 +92,6 @@ namespace SimpleEventSourcing.Samples.Orders
                             IsConfirmed = order.IsConfirmed,
                             IsCanceled = order.IsCanceled,
                             Items = JsonConvert.DeserializeObject<IEnumerable<OrderedItem>>(order.Items)
-                            //Items = orderedItems
-                            //    .Select(i =>
-                            //    {
-                            //        return new ItemAndPriceAndQuantity
-                            //        {
-                            //            ItemId = i.ItemId,
-                            //            Price = Convert.ToDecimal(i.Price),
-                            //            Quantity = i.Quantity
-                            //        };
-                            //    })
                         });
                     }
                 }
@@ -173,12 +116,6 @@ namespace SimpleEventSourcing.Samples.Orders
                     )
                     .Single();
 
-                    //var orderedItems = connection.Query<ItemOrderedDbo>(
-                    //    "SELECT * FROM [ItemOrdered] WHERE [OrderId] = @OrderId",
-                    //    new { data.OrderId }
-                    //)
-                    //.ToList();
-
                     if (!replayed)
                     {
                         _updatedEntitySubject.OnNext(new Order
@@ -189,16 +126,6 @@ namespace SimpleEventSourcing.Samples.Orders
                             IsConfirmed = order.IsConfirmed,
                             IsCanceled = order.IsCanceled,
                             Items = JsonConvert.DeserializeObject<IEnumerable<OrderedItem>>(order.Items)
-                            //Items = orderedItems
-                            //    .Select(i =>
-                            //    {
-                            //        return new ItemAndPriceAndQuantity
-                            //        {
-                            //            ItemId = i.ItemId,
-                            //            Price = Convert.ToDecimal(i.Price),
-                            //            Quantity = i.Quantity
-                            //        };
-                            //    })
                         });
                     }
                 }

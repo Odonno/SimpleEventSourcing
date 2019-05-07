@@ -8,18 +8,22 @@ using System.Linq;
 using Swashbuckle.AspNetCore.Swagger;
 using Tagada.Swagger;
 using Dapper;
-using SimpleEventSourcing.Samples.EventStore;
-using static SimpleEventSourcing.Samples.Orders.Configuration;
 using Newtonsoft.Json;
+using SimpleEventSourcing.Samples.Realtime;
+using Microsoft.AspNetCore.SignalR;
+using SimpleEventSourcing.CloudFirestore;
+using SimpleEventSourcing.Samples.Providers;
+using System.Threading.Tasks;
+using SimpleEventSourcing.Samples.Events;
+using Converto;
+using static SimpleEventSourcing.Samples.Orders.Configuration;
+using static SimpleEventSourcing.Extensions;
 
 namespace SimpleEventSourcing.Samples.Orders
 {
     public class Program
     {
         public static IHostingEnvironment HostingEnvironment { get; private set; }
-        public static readonly AppCommandDispatcher AppCommandDispatcher = new AppCommandDispatcher();
-        public static readonly AppEventStore AppEventStore = new AppEventStore(AppCommandDispatcher.ObserveEventAggregate());
-        public static readonly OrderEventView OrderEventView = new OrderEventView(AppEventStore.ObserveEvent());
 
         public static void Main(string[] args)
         {
@@ -28,6 +32,7 @@ namespace SimpleEventSourcing.Samples.Orders
                 {
                     HostingEnvironment = builderContext.HostingEnvironment;
                 })
+                .ConfigureServices(s => s.AddSignalR())
                 .ConfigureServices(s => s.AddRouting())
                 .ConfigureServices(s => s.AddMvc())
                 .ConfigureServices(s =>
@@ -43,6 +48,7 @@ namespace SimpleEventSourcing.Samples.Orders
                     s.AddCors(o => o.AddPolicy("CorsPolicy", builder =>
                     {
                         builder.AllowAnyOrigin()
+                               .AllowCredentials()
                                .AllowAnyMethod()
                                .AllowAnyHeader();
                     }));
@@ -55,15 +61,38 @@ namespace SimpleEventSourcing.Samples.Orders
                     }
 
                     app.UseCors("CorsPolicy");
-
+                    
                     HandleDatabaseCreation();
+
+                    var dataProvider = new CloudFirestoreProvider("event-sourcing-da233", "firebase.json");
+                    var streamProvider = new CloudFirestoreEventStreamProvider<StreamedEvent>(dataProvider.Database, new StreamedEventFirestoreConverter());
+
+                    var eventStore = EventStoreBuilder<StreamedEvent>
+                        .New()
+                        .WithStreamProvider(streamProvider)
+                        .WithApplyFunction(new ValidateOrderApplyFunction())
+                        .WithApplyFunction(new CancelOrderApplyFunction())
+                        .Build();
+
+                    var orderEventView = new OrderEventView(streamProvider);
 
                     app.Map("/api")
                         .Get("/all", GetAllOrders)
-                        .Post<ValidateOrderCommand>("/validate", AppCommandDispatcher.Dispatch)
-                        .Post<CancelOrderCommand>("/cancel", AppCommandDispatcher.Dispatch)
+                        .Post<ValidateOrderCommand>("/validate", async (command) => await eventStore.ApplyAsync(command))
+                        .Post<CancelOrderCommand>("/cancel", async (command) => await eventStore.ApplyAsync(command))
                         .AddSwagger()
                         .Use();
+
+                    app.UseSignalR(routes =>
+                    {
+                        routes.MapHub<OrderHub>("/order");
+                    });
+
+                    orderEventView.ObserveEntityChange().Subscribe(async entity =>
+                    {
+                        var hub = app.ApplicationServices.GetRequiredService<IHubContext<OrderHub>>();
+                        await hub.Clients.All.SendAsync("Sync", entity);
+                    });
 
                     app.UseSwaggerUI(c =>
                     {
@@ -100,9 +129,6 @@ namespace SimpleEventSourcing.Samples.Orders
                 var orders = connection
                     .Query<OrderDbo>("SELECT * FROM [Order]")
                     .ToList();
-                //var itemsOrdered = connection
-                //    .Query<ItemOrderedDbo>("SELECT * FROM [ItemOrdered]")
-                //    .ToList();
 
                 return orders.Select(order =>
                 {
@@ -114,17 +140,6 @@ namespace SimpleEventSourcing.Samples.Orders
                         IsConfirmed = order.IsConfirmed,
                         IsCanceled = order.IsCanceled,
                         Items = JsonConvert.DeserializeObject<IEnumerable<OrderedItem>>(order.Items)
-                        //Items = itemsOrdered
-                        //    .Where(i => i.OrderId == order.Id)
-                        //    .Select(i =>
-                        //    {
-                        //        return new ItemAndPriceAndQuantity
-                        //        {
-                        //            ItemId = i.ItemId,
-                        //            Price = Convert.ToDecimal(i.Price),
-                        //            Quantity = i.Quantity
-                        //        };
-                        //    })
                     };
                 });
             }
@@ -158,6 +173,8 @@ namespace SimpleEventSourcing.Samples.Orders
         public int Quantity { get; set; }
     }
 
+    public class OrderHub : SyncEntityHub<Order> { }
+
     public class GetOrdersQuery { }
 
     public class ValidateOrderCommand
@@ -168,5 +185,34 @@ namespace SimpleEventSourcing.Samples.Orders
     public class CancelOrderCommand
     {
         public string OrderId { get; set; }
+    }
+
+    public class ValidateOrderApplyFunction : IApplyFunction<ValidateOrderCommand, StreamedEvent>
+    {
+        public async Task ExecuteAsync(ValidateOrderCommand command, IEventStreamProvider<StreamedEvent> eventStreamProvider)
+        {
+            var @event = command.ConvertTo<OrderValidated>();
+
+            string streamId = $"order-{@event.OrderId}";
+            var stream = await eventStreamProvider.GetStreamAsync(streamId);
+            var currentPosition = await stream.GetCurrentPositionAsync();
+
+            var events = List(@event);
+            await stream.AppendEventsAsync(CreateStreamedEvents(streamId, currentPosition, events));
+        }
+    }
+    public class CancelOrderApplyFunction : IApplyFunction<CancelOrderCommand, StreamedEvent>
+    {
+        public async Task ExecuteAsync(CancelOrderCommand command, IEventStreamProvider<StreamedEvent> eventStreamProvider)
+        {
+            var @event = command.ConvertTo<OrderCanceled>();
+
+            string streamId = $"order-{@event.OrderId}";
+            var stream = await eventStreamProvider.GetStreamAsync(streamId);
+            var currentPosition = await stream.GetCurrentPositionAsync();
+
+            var events = List(@event);
+            await stream.AppendEventsAsync(CreateStreamedEvents(streamId, currentPosition, events));
+        }
     }
 }

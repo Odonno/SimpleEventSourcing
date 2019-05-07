@@ -9,10 +9,12 @@ namespace SimpleEventSourcing
     /// The State is a real live-data updated whenever an observed event is pushed.
     /// </summary>
     public abstract class InMemoryEventView<TEvent, TState>
-        where TEvent : SimpleEvent
+        where TEvent : StreamedEvent
         where TState : class, new()
     {
         private readonly Subject<TState> _stateSubject = new Subject<TState>();
+
+        protected readonly IEventStreamProvider<StreamedEvent> _streamProvider;
 
         /// <summary>
         /// Gets the current state of the view.
@@ -22,17 +24,19 @@ namespace SimpleEventSourcing
         /// <summary>
         /// Initializes a new instance of the <see cref="InMemoryEventView{TState}"/> class.
         /// </summary>
-        /// <param name="events">The event stream to listen to in order to update the state.</param>
+        /// <param name="streamProvider">The provider of event streams.</param>
         /// <param name="initialState">The initial state to use in the view; if <c>null</c>, a default value is constructed using <c>new TState()</c>.</param>
-        protected InMemoryEventView(IObservable<TEvent> events, TState initialState = null)
+        protected InMemoryEventView(IEventStreamProvider<StreamedEvent> streamProvider, TState initialState = null)
         {
+            _streamProvider = streamProvider;
             State = initialState ?? new TState();
 
-            events.Subscribe(@event =>
-            {
-                State = Reduce(State, @event);
-                _stateSubject.OnNext(State);
-            });
+            // TODO
+            //events.Subscribe(@event =>
+            //{
+            //    State = Reduce(State, @event);
+            //    _stateSubject.OnNext(State);
+            //});
         }
 
         /// <summary>

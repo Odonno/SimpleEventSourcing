@@ -9,11 +9,13 @@ namespace SimpleEventSourcing
     /// This class does not contain a State and is mainly used to execute actions like updating a database after each event.
     /// </summary>
     public abstract class EventView<TEvent>
-        where TEvent : SimpleEvent
+        where TEvent : StreamedEvent
     {
-        protected EventView(IObservable<TEvent> events)
+        protected readonly IEventStreamProvider<StreamedEvent> _streamProvider;
+
+        public EventView(IEventStreamProvider<StreamedEvent> streamProvider)
         {
-            events.Subscribe(@event => Handle(@event));
+            _streamProvider = streamProvider;
         }
 
         /// <summary>

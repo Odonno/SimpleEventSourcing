@@ -1,5 +1,8 @@
-using System;
+using SimpleEventSourcing.InMemory;
+using SimpleEventSourcing.UnitTests.Models;
+using System.Linq;
 using System.Reactive.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace SimpleEventSourcing.UnitTests
@@ -7,111 +10,77 @@ namespace SimpleEventSourcing.UnitTests
     public class EventStoreTest
     {
         [Fact]
-        public void CanDispatchEvent()
+        public async Task CanApplyCommand()
         {
             // Arrange
-            var commandDispatcher = new CartCommandDispatcher();
-            var eventStore = new CartEventStore(commandDispatcher.ObserveEventAggregate());
+            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+
+            var eventStore = EventStoreBuilder<StreamedEvent>
+                .New()
+                .WithStreamProvider(streamProvider)
+                .WithApplyFunction(new AddItemInCartApplyFunction())
+                .WithApplyFunction(new RemoveItemFromCartApplyFunction())
+                .WithApplyFunction(new ResetCartApplyFunction())
+                .Build();
 
             // Act
-            commandDispatcher.Dispatch(new AddItemInCartCommand
+            await eventStore.ApplyAsync(new AddItemInCartCommand
             {
                 ItemName = "Book",
                 UnitCost = 45
             });
 
             // Assert
+            var allStreams = await streamProvider.GetAllStreamsAsync();
+            Assert.Single(allStreams);
+
+            var cartStream = allStreams.Single();
+            Assert.Equal("cart", cartStream.Id);
+
+            var events = await cartStream.GetAllEventsAsync();
+            Assert.Single(events);
+
+            var firstEvent = events.Single();
+            Assert.Equal(nameof(ItemAddedInCart), firstEvent.EventName);
         }
 
         [Fact]
-        public void CanObserveMultipleEventsOfTheSameType()
+        public async Task CanApplyMultipleCommands()
         {
             // Arrange
-            var commandDispatcher = new CartCommandDispatcher();
-            var eventStore = new CartEventStore(commandDispatcher.ObserveEventAggregate());
+            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+
+            var eventStore = EventStoreBuilder<StreamedEvent>
+                .New()
+                .WithStreamProvider(streamProvider)
+                .WithApplyFunction(new AddItemInCartApplyFunction())
+                .WithApplyFunction(new RemoveItemFromCartApplyFunction())
+                .WithApplyFunction(new ResetCartApplyFunction())
+                .Build();
 
             // Act
-            int eventListenedCount = 0;
-
-            eventStore.ObserveEvent()
-                .Subscribe(_ =>
-                {
-                    eventListenedCount++;
-                });
-
-            commandDispatcher.Dispatch(new AddItemInCartCommand
+            await eventStore.ApplyAsync(new AddItemInCartCommand
             {
                 ItemName = "Book",
                 UnitCost = 45
             });
-            commandDispatcher.Dispatch(new AddItemInCartCommand
-            {
-                ItemName = "Book",
-                UnitCost = 20
-            });
+            await eventStore.ApplyAsync(new ResetCartCommand());
 
             // Assert
-            Assert.Equal(2, eventListenedCount);
-        }
+            var allStreams = await streamProvider.GetAllStreamsAsync();
+            Assert.Single(allStreams);
 
-        [Fact]
-        public void CanObserveMultipleEventsOfDifferentTypes()
-        {
-            // Arrange
-            var commandDispatcher = new CartCommandDispatcher();
-            var eventStore = new CartEventStore(commandDispatcher.ObserveEventAggregate());
+            var cartStream = allStreams.Single();
+            Assert.Equal("cart", cartStream.Id);
 
-            // Act
-            int eventListenedCount = 0;
-            SimpleEvent lastEvent = null;
+            var events = await cartStream.GetAllEventsAsync();
+            Assert.Equal(2, events.Count());
 
-            eventStore.ObserveEvent()
-                .Subscribe(@event =>
-                {
-                    eventListenedCount++;
-                    lastEvent = @event;
-                });
+            var firstEvent = events.ElementAt(0);
+            Assert.Equal(nameof(ItemAddedInCart), firstEvent.EventName);
 
-            commandDispatcher.Dispatch(new AddItemInCartCommand
-            {
-                ItemName = "Book",
-                UnitCost = 45
-            });
-            commandDispatcher.Dispatch(new ResetCartCommand());
-
-            // Assert
-            Assert.Equal(2, eventListenedCount);
-            Assert.IsType<ResetCartCommand>(lastEvent.Data);
-        }
-
-        [Fact]
-        public void CanObserveSingleEventType()
-        {
-            // Arrange
-            var commandDispatcher = new CartCommandDispatcher();
-            var eventStore = new CartEventStore(commandDispatcher.ObserveEventAggregate());
-
-            // Act
-            int eventListenedCount = 0;
-            SimpleEvent lastEvent = null;
-
-            eventStore.ObserveEvent<AddItemInCartCommand>()
-                .Subscribe(@event =>
-                {
-                    eventListenedCount++;
-                    lastEvent = @event;
-                });
-
-            commandDispatcher.Dispatch(new AddItemInCartCommand
-            {
-                ItemName = "Book",
-                UnitCost = 45
-            });
-            commandDispatcher.Dispatch(new ResetCartCommand());
-
-            // Assert
-            Assert.Equal(1, eventListenedCount);
-            Assert.IsType<AddItemInCartCommand>(lastEvent.Data);
+            var secondEvent = events.ElementAt(1);
+            Assert.Equal(nameof(CartReset), secondEvent.EventName);
         }
     }
 }

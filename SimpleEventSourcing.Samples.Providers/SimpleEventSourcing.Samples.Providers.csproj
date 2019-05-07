@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="firebase.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="firebase.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Google.Cloud.Firestore" Version="1.0.0-beta20" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SimpleEventSourcing.CloudFirestore\SimpleEventSourcing.CloudFirestore.csproj" />
+    <ProjectReference Include="..\SimpleEventSourcing.Samples.Events\SimpleEventSourcing.Samples.Events.csproj" />
+    <ProjectReference Include="..\SimpleEventSourcing\SimpleEventSourcing.csproj" />
+  </ItemGroup>
+
+</Project>

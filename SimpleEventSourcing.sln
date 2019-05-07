@@ -19,9 +19,23 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples.Orders", "SimpleEventSourcing.Samples.Orders\SimpleEventSourcing.Samples.Orders.csproj", "{DEEEA1A3-8F0B-4791-8B6C-E84125177959}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples.EventStore", "SimpleEventSourcing.Samples.EventStore\SimpleEventSourcing.Samples.EventStore.csproj", "{E08EEF9B-7EDE-49D8-97B1-FC0833B61874}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples.Events", "SimpleEventSourcing.Samples.Events\SimpleEventSourcing.Samples.Events.csproj", "{E08EEF9B-7EDE-49D8-97B1-FC0833B61874}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples.History", "SimpleEventSourcing.Samples.History\SimpleEventSourcing.Samples.History.csproj", "{6A9C5D41-01A0-4BA9-A925-B2509FF8FAF9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.CosmosDb", "SimpleEventSourcing.CosmosDb\SimpleEventSourcing.CosmosDb.csproj", "{3BF7C1A0-2B73-4746-99A1-502E978C0BDB}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.InMemory", "SimpleEventSourcing.InMemory\SimpleEventSourcing.InMemory.csproj", "{1693CADA-79CC-48E4-94FA-3FCC0684A4B6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples.Realtime", "SimpleEventSourcing.Samples.Realtime\SimpleEventSourcing.Samples.Realtime.csproj", "{4B9A2DA0-3DDA-47EA-B824-2FFBACDBD8B4}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{BFCFFF8B-409D-4615-A799-596954EB76A8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Providers", "Providers", "{F7ACC779-4DF4-40D5-9900-378DF423808B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.CloudFirestore", "SimpleEventSourcing.CloudFirestore\SimpleEventSourcing.CloudFirestore.csproj", "{FB0E87D7-BBC4-48E7-9CBB-4F212B7BB0C9}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples.Providers", "SimpleEventSourcing.Samples.Providers\SimpleEventSourcing.Samples.Providers.csproj", "{93300ACE-FB74-4ACA-8523-BA8AC6CA9A41}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -61,6 +75,26 @@ Global
 		{6A9C5D41-01A0-4BA9-A925-B2509FF8FAF9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6A9C5D41-01A0-4BA9-A925-B2509FF8FAF9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6A9C5D41-01A0-4BA9-A925-B2509FF8FAF9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3BF7C1A0-2B73-4746-99A1-502E978C0BDB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3BF7C1A0-2B73-4746-99A1-502E978C0BDB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3BF7C1A0-2B73-4746-99A1-502E978C0BDB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3BF7C1A0-2B73-4746-99A1-502E978C0BDB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1693CADA-79CC-48E4-94FA-3FCC0684A4B6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1693CADA-79CC-48E4-94FA-3FCC0684A4B6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1693CADA-79CC-48E4-94FA-3FCC0684A4B6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1693CADA-79CC-48E4-94FA-3FCC0684A4B6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4B9A2DA0-3DDA-47EA-B824-2FFBACDBD8B4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4B9A2DA0-3DDA-47EA-B824-2FFBACDBD8B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4B9A2DA0-3DDA-47EA-B824-2FFBACDBD8B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4B9A2DA0-3DDA-47EA-B824-2FFBACDBD8B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FB0E87D7-BBC4-48E7-9CBB-4F212B7BB0C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FB0E87D7-BBC4-48E7-9CBB-4F212B7BB0C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FB0E87D7-BBC4-48E7-9CBB-4F212B7BB0C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FB0E87D7-BBC4-48E7-9CBB-4F212B7BB0C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{93300ACE-FB74-4ACA-8523-BA8AC6CA9A41}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{93300ACE-FB74-4ACA-8523-BA8AC6CA9A41}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{93300ACE-FB74-4ACA-8523-BA8AC6CA9A41}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{93300ACE-FB74-4ACA-8523-BA8AC6CA9A41}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -72,8 +106,14 @@ Global
 		{1CAA1F7D-7F4E-4B9A-8DD0-F1130694BB59} = {A78DC66A-BCED-4E06-B589-52358366FD92}
 		{FB6806AD-F18C-4278-B1A3-484889E10393} = {A78DC66A-BCED-4E06-B589-52358366FD92}
 		{DEEEA1A3-8F0B-4791-8B6C-E84125177959} = {A78DC66A-BCED-4E06-B589-52358366FD92}
-		{E08EEF9B-7EDE-49D8-97B1-FC0833B61874} = {A78DC66A-BCED-4E06-B589-52358366FD92}
+		{E08EEF9B-7EDE-49D8-97B1-FC0833B61874} = {BFCFFF8B-409D-4615-A799-596954EB76A8}
 		{6A9C5D41-01A0-4BA9-A925-B2509FF8FAF9} = {A78DC66A-BCED-4E06-B589-52358366FD92}
+		{3BF7C1A0-2B73-4746-99A1-502E978C0BDB} = {F7ACC779-4DF4-40D5-9900-378DF423808B}
+		{1693CADA-79CC-48E4-94FA-3FCC0684A4B6} = {F7ACC779-4DF4-40D5-9900-378DF423808B}
+		{4B9A2DA0-3DDA-47EA-B824-2FFBACDBD8B4} = {BFCFFF8B-409D-4615-A799-596954EB76A8}
+		{BFCFFF8B-409D-4615-A799-596954EB76A8} = {A78DC66A-BCED-4E06-B589-52358366FD92}
+		{FB0E87D7-BBC4-48E7-9CBB-4F212B7BB0C9} = {F7ACC779-4DF4-40D5-9900-378DF423808B}
+		{93300ACE-FB74-4ACA-8523-BA8AC6CA9A41} = {BFCFFF8B-409D-4615-A799-596954EB76A8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {23EAD2F7-63C4-4362-8C89-C93E92CEE47A}

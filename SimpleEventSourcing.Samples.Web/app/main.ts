@@ -1470,7 +1470,7 @@ const epics: Observable<Action>[] = [
 merge(...epics).subscribe(dispatch);
 
 // observe websockets (via signalr)
-const eventConnection = new HubConnectionBuilder().withUrl("/event").build();
+const eventConnection = new HubConnectionBuilder().withUrl(eventHistoryService.url + "event").build();
 eventConnection.on("Sync", event => {
     dispatch(actionsCreator.events.add(event));
 });
@@ -1478,7 +1478,7 @@ eventConnection.start().catch(error => {
     return console.error(error.toString());
 });
 
-const cartConnection = new HubConnectionBuilder().withUrl("/cart").build();
+const cartConnection = new HubConnectionBuilder().withUrl(shopService.url + "cart").build();
 cartConnection.on("Sync", itemAndQuantity => {
     dispatch(actionsCreator.shop.upsert(itemAndQuantity));
 });
@@ -1486,7 +1486,7 @@ cartConnection.start().catch(error => {
     return console.error(error.toString());
 });
 
-const orderConnection = new HubConnectionBuilder().withUrl("/order").build();
+const orderConnection = new HubConnectionBuilder().withUrl(orderService.url + "order").build();
 orderConnection.on("Sync", order => {
     dispatch(actionsCreator.orders.upsert(order));
 });
@@ -1494,7 +1494,7 @@ orderConnection.start().catch(error => {
     return console.error(error.toString());
 });
 
-const itemConnection = new HubConnectionBuilder().withUrl("/item").build();
+const itemConnection = new HubConnectionBuilder().withUrl(inventoryService.url + "item").build();
 itemConnection.on("Sync", item => {
     dispatch(actionsCreator.inventory.upsert(item));
 });

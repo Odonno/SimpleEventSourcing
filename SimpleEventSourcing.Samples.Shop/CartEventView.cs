@@ -1,6 +1,6 @@
 ﻿using Converto;
 using Dapper;
-using SimpleEventSourcing.Samples.EventStore;
+using SimpleEventSourcing.Samples.Events;
 using System;
 using System.Linq;
 using System.Reactive.Linq;
@@ -9,11 +9,11 @@ using static SimpleEventSourcing.Samples.Shop.Configuration;
 
 namespace SimpleEventSourcing.Samples.Shop
 {
-    public class CartEventView : EventView<SimpleEvent>
+    public class CartEventView : EventView<StreamedEvent>
     {
         private readonly Subject<Cart> _updatedEntitySubject = new Subject<Cart>();
 
-        public CartEventView(IObservable<SimpleEvent> events) : base(events)
+        public CartEventView(IEventStreamProvider<StreamedEvent> streamProvider) : base(streamProvider)
         {
         }
 
@@ -22,7 +22,7 @@ namespace SimpleEventSourcing.Samples.Shop
             return _updatedEntitySubject.DistinctUntilChanged();
         }
 
-        protected override void Handle(SimpleEvent @event, bool replayed = false)
+        protected override void Handle(StreamedEvent @event, bool replayed = false)
         {
             if (@event.EventName == nameof(CartItemSelected))
             {
@@ -96,7 +96,7 @@ namespace SimpleEventSourcing.Samples.Shop
                     }
                 }
             }
-            if (@event.EventName == nameof(CartReseted))
+            if (@event.EventName == nameof(CartReseted) || @event.EventName == nameof(OrderedFromCart))
             {
                 using (var connection = GetDatabaseConnection())
                 {

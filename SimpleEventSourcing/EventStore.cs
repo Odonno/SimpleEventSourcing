@@ -1,65 +1,86 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
+using System.Threading.Tasks;
 
 namespace SimpleEventSourcing
 {
     /// <summary>
-    /// The base class for creating Event Store (Write Model of an Event Sourcing architecture).
+    /// The "command center" to create an Event Store (Write Model of an Event Sourcing architecture).
     /// </summary>
-    public abstract class EventStore<TEvent> 
-        where TEvent : SimpleEvent
+    public sealed class EventStore<TEvent>
+        where TEvent : StreamedEvent
     {
-        private readonly Subject<TEvent> _eventSubject = new Subject<TEvent>();
+        private readonly List<object> _applyFunctions;
+        private readonly List<IEvolveFunction<TEvent>> _evolveFunctions;
+        private readonly IEventStreamProvider<TEvent> _eventStreamProvider;
 
-        protected EventStore(IObservable<IEnumerable<TEvent>> eventAggregates)
+        private EventStore() { }
+        internal EventStore(
+            List<object> applyFunctions,
+            List<IEvolveFunction<TEvent>> evolveFunctions,
+            IEventStreamProvider<TEvent> eventStreamProvider
+        )
         {
-            eventAggregates.Subscribe(events => Push(events));
+            _applyFunctions = applyFunctions;
+            _evolveFunctions = evolveFunctions;
+            _eventStreamProvider = eventStreamProvider;
+
+            ListenStreamsToEvolve();
         }
 
         /// <summary>
-        /// Push the specified events to a persistent layer like a database.
+        /// Evolve the Event Store by listening to the upcoming events from external streams of events.
         /// </summary>
-        /// <param name="events">The list of events to store.</param>
-        public void Push(IEnumerable<TEvent> events)
+        private void ListenStreamsToEvolve()
         {
-            var persistedEvents = Persist(events);
-            foreach (var @event in persistedEvents)
+            if (!_evolveFunctions.Any())
+                return;
+
+            if (_eventStreamProvider is IRealtimeEventStreamProvider<TEvent> realtimeEventStreamProvider)
             {
-                _eventSubject.OnNext(@event);
+                realtimeEventStreamProvider
+                    .DetectNewStreams()
+                    .OfType<IRealtimeEventStream<TEvent>>()
+                    .Subscribe(async stream =>
+                    {
+                        var shouldListenTasks = await Task.WhenAll(_evolveFunctions.Select(func => func.ShouldListenStreamsAsync(stream.Id)));
+                        bool shouldListen = shouldListenTasks.Any();
+
+                        if (!shouldListen)
+                            return;
+
+                        stream.ListenForNewEvents(true).Subscribe(async @event =>
+                        {
+                            var evolveFunctions = _evolveFunctions
+                                .Where(func => func.OfEvent(@event))
+                                .ToList();
+
+                            foreach (var evolveFunction in evolveFunctions)
+                            {
+                                await evolveFunction.ExecuteAsync(@event, _eventStreamProvider);
+                            }
+                        });
+                    });
             }
         }
 
         /// <summary>
-        /// Observes events being pushed in the store.
+        /// Apply a command that will be transformed into 1 or more events that will then be saved in the Event Store.
         /// </summary>
-        /// <returns>An <see cref="IObservable{TEvent}"/> that can be subscribed to in order to receive updates about events pushed in the store.</returns>
-        public IObservable<TEvent> ObserveEvent()
+        /// <param name="command">The command to apply.</param>
+        public async Task ApplyAsync<TCommand>(TCommand command)
+            where TCommand : class, new()
         {
-            return _eventSubject;
-        }
-        /// <summary>
-        /// Observes events of a specific type being pushed in the store.
-        /// </summary>
-        /// <typeparam name="TEventType">The type of events that the subscriber is interested in.</typeparam>
-        /// <returns>
-        /// An <see cref="IObservable{TEventType}"/> that can be subscribed to in order to receive updates whenever an event of <typeparamref name="TEventType"/> is pushed in the store.
-        /// </returns>
-        public IObservable<TEvent> ObserveEvent<TEventType>() where TEventType : class
-        {
-            return _eventSubject.Where(@event => @event.EventName == typeof(TEventType).Name);
-        }
+            var applyFunctions = _applyFunctions
+                .OfType<IApplyFunction<TCommand, TEvent>>()
+                .ToList();
 
-        /// <summary>
-        /// Save new events in a persistent layer.
-        /// Implementations should override this method to provide functionality specific to their use case.
-        /// </summary>
-        /// <param name="events">The list of events to persist.</param>
-        protected virtual IEnumerable<TEvent> Persist(IEnumerable<TEvent> events)
-        {
-            // No persistent layer by default
-            return events;
+            foreach (var applyFunction in applyFunctions)
+            {
+                await applyFunction.ExecuteAsync(command, _eventStreamProvider);
+            }
         }
     }
 }
