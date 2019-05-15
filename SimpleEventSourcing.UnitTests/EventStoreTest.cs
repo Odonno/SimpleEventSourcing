@@ -13,7 +13,7 @@ namespace SimpleEventSourcing.UnitTests
         public async Task CanApplyCommand()
         {
             // Arrange
-            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+            var streamProvider = new CustomEventStreamProvider<StreamedEvent>();
 
             var eventStore = EventStoreBuilder<StreamedEvent>
                 .New()
@@ -48,7 +48,7 @@ namespace SimpleEventSourcing.UnitTests
         public async Task CanApplyMultipleCommands()
         {
             // Arrange
-            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+            var streamProvider = new CustomEventStreamProvider<StreamedEvent>();
 
             var eventStore = EventStoreBuilder<StreamedEvent>
                 .New()

@@ -38,32 +38,29 @@ namespace SimpleEventSourcing
             if (!_evolveFunctions.Any())
                 return;
 
-            if (_eventStreamProvider is IRealtimeEventStreamProvider<TEvent> realtimeEventStreamProvider)
-            {
-                realtimeEventStreamProvider
-                    .DetectNewStreams()
-                    .OfType<IRealtimeEventStream<TEvent>>()
-                    .Subscribe(async stream =>
+            // TODO : listen for new streams + new events on existing streams 
+            _eventStreamProvider
+                .ListenForNewStreams()
+                .Subscribe(async stream =>
+                {
+                    var shouldListenTasks = await Task.WhenAll(_evolveFunctions.Select(func => func.ShouldListenStreamsAsync(stream.Id)));
+                    bool shouldListen = shouldListenTasks.Any();
+
+                    if (!shouldListen)
+                        return;
+
+                    stream.ListenForNewEvents(true).Subscribe(async @event =>
                     {
-                        var shouldListenTasks = await Task.WhenAll(_evolveFunctions.Select(func => func.ShouldListenStreamsAsync(stream.Id)));
-                        bool shouldListen = shouldListenTasks.Any();
+                        var evolveFunctions = _evolveFunctions
+                            .Where(func => func.OfEvent(@event))
+                            .ToList();
 
-                        if (!shouldListen)
-                            return;
-
-                        stream.ListenForNewEvents(true).Subscribe(async @event =>
+                        foreach (var evolveFunction in evolveFunctions)
                         {
-                            var evolveFunctions = _evolveFunctions
-                                .Where(func => func.OfEvent(@event))
-                                .ToList();
-
-                            foreach (var evolveFunction in evolveFunctions)
-                            {
-                                await evolveFunction.ExecuteAsync(@event, _eventStreamProvider);
-                            }
-                        });
+                            await evolveFunction.ExecuteAsync(@event, _eventStreamProvider);
+                        }
                     });
-            }
+                });
         }
 
         /// <summary>

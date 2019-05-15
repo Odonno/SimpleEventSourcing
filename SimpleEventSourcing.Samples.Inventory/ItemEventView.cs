@@ -15,24 +15,20 @@ namespace SimpleEventSourcing.Samples.Inventory
         
         public ItemEventView(IEventStreamProvider<StreamedEvent> streamProvider) : base(streamProvider)
         {
+            // TODO : Handle all events
+
             // TODO : Extract method
             // Detect new streams
-            if (_streamProvider is IRealtimeEventStreamProvider<StreamedEvent> realtimeStreamProvider)
+            streamProvider.ListenForNewStreams().Subscribe(stream =>
             {
-                realtimeStreamProvider.DetectNewStreams().Subscribe(stream =>
-                {
-                    if (!stream.Id.StartsWith("item-"))
-                        return;
+                if (!stream.Id.StartsWith("item-"))
+                    return;
 
-                    if (stream is IRealtimeEventStream<StreamedEvent> realtimeItemStream)
-                    {
-                        realtimeItemStream.ListenForNewEvents(true).Subscribe(@event =>
-                        {
-                            Handle(@event);
-                        });
-                    }
+                stream.ListenForNewEvents(true).Subscribe(@event =>
+                {
+                    Handle(@event);
                 });
-            }
+            });
         }
 
         public IObservable<Item> ObserveEntityChange()

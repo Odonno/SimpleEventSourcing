@@ -4,6 +4,19 @@ using System.Threading.Tasks;
 
 namespace SimpleEventSourcing
 {
+    public interface IEventStreamProviderStorageLayer<TEvent>
+        where TEvent : StreamedEvent
+    {
+        Task<IEnumerable<EventStream<TEvent>>> GetAllStreamsAsync();
+        Task<EventStream<TEvent>> GetStreamAsync(string streamId);
+    }
+
+    public interface IEventStreamProviderMessagingLayer<TEvent>
+        where TEvent : StreamedEvent
+    {
+        IObservable<EventStream<TEvent>> ListenForNewStreams();
+    }
+
     /// <summary>
     /// A provider of Event Stream, where all streams are stored.
     /// </summary>
@@ -11,18 +24,11 @@ namespace SimpleEventSourcing
     public interface IEventStreamProvider<TEvent>
         where TEvent : StreamedEvent
     {
-        Task<IEventStream<TEvent>> GetStreamAsync(string streamId);
-        Task<IEnumerable<IEventStream<TEvent>>> GetAllStreamsAsync();
-    }
+        IEventStreamProviderStorageLayer<TEvent> StorageProvider { get; }
+        IEventStreamProviderMessagingLayer<TEvent> MessagingProvider { get; }
 
-    /// <summary>
-    /// A provider of Event Stream, where all streams are stored.
-    /// With ability to detect when new streams are created in realtime.
-    /// </summary>
-    /// <typeparam name="TEvent">Type of events stored in the stream.</typeparam>
-    public interface IRealtimeEventStreamProvider<TEvent> : IEventStreamProvider<TEvent>
-        where TEvent : StreamedEvent
-    {
-        IObservable<IEventStream<TEvent>> DetectNewStreams();
+        Task<IEnumerable<EventStream<TEvent>>> GetAllStreamsAsync();
+        Task<EventStream<TEvent>> GetStreamAsync(string streamId);
+        IObservable<EventStream<TEvent>> ListenForNewStreams();
     }
 }

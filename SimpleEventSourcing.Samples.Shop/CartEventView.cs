@@ -15,6 +15,7 @@ namespace SimpleEventSourcing.Samples.Shop
 
         public CartEventView(IEventStreamProvider<StreamedEvent> streamProvider) : base(streamProvider)
         {
+            // TODO : Handle all events
         }
 
         public IObservable<Cart> ObserveEntityChange()

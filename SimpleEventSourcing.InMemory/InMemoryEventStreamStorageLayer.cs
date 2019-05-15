@@ -6,18 +6,12 @@ using System.Threading.Tasks;
 
 namespace SimpleEventSourcing.InMemory
 {
-    public class InMemoryEventStream<TEvent> : IEventStream<TEvent>
+    public class InMemoryEventStreamStorageLayer<TEvent> : IEventStreamStorageLayer<TEvent>
         where TEvent : StreamedEvent
     {
         private readonly ConcurrentDictionary<long, TEvent> _events = new ConcurrentDictionary<long, TEvent>();
 
-        public string Id { get; }
         public EventStreamDetails Details { get; private set; }
-
-        public InMemoryEventStream(string streamId)
-        {
-            Id = streamId;
-        }
 
         private void TryAppendEvent(TEvent @event)
         {
@@ -31,11 +25,6 @@ namespace SimpleEventSourcing.InMemory
                 LastPosition = @event.Position,
                 UpdatedAt = DateTime.Now
             };
-        }
-
-        public Task<long?> GetCurrentPositionAsync()
-        {
-            return Task.FromResult(Details?.LastPosition);
         }
 
         public Task AppendEventAsync(TEvent @event)
@@ -62,6 +51,11 @@ namespace SimpleEventSourcing.InMemory
                 .AsEnumerable();
 
             return Task.FromResult(allEvents);
+        }
+
+        public Task<long?> GetCurrentPositionAsync()
+        {
+            return Task.FromResult(Details?.LastPosition);
         }
 
         public Task<TEvent> GetEventAsync(string eventId)

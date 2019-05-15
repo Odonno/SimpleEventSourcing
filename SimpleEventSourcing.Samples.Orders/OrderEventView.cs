@@ -17,6 +17,7 @@ namespace SimpleEventSourcing.Samples.Orders
 
         public OrderEventView(IEventStreamProvider<StreamedEvent> streamProvider) : base(streamProvider)
         {
+            // TODO : Handle all events
         }
 
         public IObservable<Order> ObserveEntityChange()

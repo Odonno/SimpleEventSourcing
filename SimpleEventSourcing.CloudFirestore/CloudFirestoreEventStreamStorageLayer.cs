@@ -2,51 +2,31 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
 using System.Threading.Tasks;
 using static SimpleEventSourcing.CloudFirestore.CloudFirestoreConstants;
 
 namespace SimpleEventSourcing.CloudFirestore
 {
-    public sealed class CloudFirestoreEventStream<TEvent> : IRealtimeEventStream<TEvent>
-        where TEvent : StreamedEvent, new()
+    public class CloudFirestoreEventStreamStorageLayer<TEvent> : IEventStreamStorageLayer<TEvent>
+        where TEvent : StreamedEvent
     {
         private readonly DocumentReference _streamDocumentReference;
         private readonly CollectionReference _eventsCollectionReference;
         private readonly ICloudFirestoreEventConverter<TEvent> _firestoreEventConverter;
 
-        public string Id { get; }
-
-        public CloudFirestoreEventStream(
-            string streamId,
+        public CloudFirestoreEventStreamStorageLayer(
             DocumentReference streamDocumentReference,
             ICloudFirestoreEventConverter<TEvent> firestoreEventConverter
         )
         {
-            Id = streamId;
-
             _streamDocumentReference = streamDocumentReference;
             _eventsCollectionReference = streamDocumentReference.Collection(EventsCollectionName);
-
             _firestoreEventConverter = firestoreEventConverter;
         }
 
         private DocumentReference GetEventDocumentReference(TEvent @event)
         {
             return _eventsCollectionReference.Document(@event.Position.ToString());
-        }
-
-        public async Task<long?> GetCurrentPositionAsync()
-        {
-            var stream = await _streamDocumentReference.GetSnapshotAsync();
-            if (stream.Exists)
-            {
-                var details = stream.ConvertTo<EventStreamDetails>();
-                return details?.LastPosition;
-            }
-
-            return null;
         }
 
         public async Task AppendEventAsync(TEvent @event)
@@ -86,6 +66,18 @@ namespace SimpleEventSourcing.CloudFirestore
                 .ToList();
         }
 
+        public async Task<long?> GetCurrentPositionAsync()
+        {
+            var streamDocument = await _streamDocumentReference.GetSnapshotAsync();
+            if (streamDocument.Exists)
+            {
+                var details = streamDocument.ConvertTo<EventStreamDetails>();
+                return details?.LastPosition;
+            }
+
+            return null;
+        }
+
         public async Task<TEvent> GetEventAsync(string eventId)
         {
             var querySnapshot = await _eventsCollectionReference
@@ -104,39 +96,6 @@ namespace SimpleEventSourcing.CloudFirestore
                 .GetSnapshotAsync();
 
             return snapshot.ConvertTo<TEvent>();
-        }
-
-        private static bool ShouldListenForNewEvents(bool isNewStream, DateTime startListeningAt, Timestamp? documentCreatedAt)
-        {
-            return isNewStream || 
-                (documentCreatedAt.HasValue && documentCreatedAt.Value.ToDateTime() > startListeningAt);
-        }
-        public IObservable<TEvent> ListenForNewEvents(bool isNewStream)
-        {
-            return Observable.Create<TEvent>(observer =>
-            {
-                var startListeningAt = DateTime.Now;
-
-                var listener = _eventsCollectionReference.Listen(querySnapshot =>
-                {
-                    foreach (var change in querySnapshot.Changes)
-                    {
-                        var document = change.Document;
-                        if (document.Exists)
-                        {
-                            if (ShouldListenForNewEvents(isNewStream, startListeningAt, document.CreateTime))
-                            {
-                                observer.OnNext(_firestoreEventConverter.FromFirestore(document));
-                            }
-                        }
-                    }
-                });
-
-                return Disposable.Create(async () =>
-                {
-                    await listener.StopAsync();
-                });
-            });
         }
     }
 }

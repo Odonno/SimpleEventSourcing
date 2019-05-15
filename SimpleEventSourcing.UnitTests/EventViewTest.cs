@@ -13,7 +13,8 @@ namespace SimpleEventSourcing.UnitTests
         public void CanReadInitialState()
         {
             // Arrange
-            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+            var streamProvider = new CustomEventStreamProvider<StreamedEvent>();
+
             var eventView = new TotalCostCartEventView(streamProvider);
 
             // Act
@@ -26,7 +27,7 @@ namespace SimpleEventSourcing.UnitTests
         public async Task CanObserveStateWithEventsOfTheSameType()
         {
             // Arrange
-            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+            var streamProvider = new CustomEventStreamProvider<StreamedEvent>();
 
             var eventStore = EventStoreBuilder<StreamedEvent>
                 .New()
@@ -70,7 +71,7 @@ namespace SimpleEventSourcing.UnitTests
         public async Task CanObserveStateWithEventsOfDifferentTypes()
         {
             // Arrange
-            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+            var streamProvider = new CustomEventStreamProvider<StreamedEvent>();
 
             var eventStore = EventStoreBuilder<StreamedEvent>
                 .New()
@@ -110,7 +111,7 @@ namespace SimpleEventSourcing.UnitTests
         public async Task CanObserveStateOfMultipleEventViews()
         {
             // Arrange
-            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+            var streamProvider = new CustomEventStreamProvider<StreamedEvent>();
 
             var eventStore = EventStoreBuilder<StreamedEvent>
                 .New()
@@ -164,7 +165,7 @@ namespace SimpleEventSourcing.UnitTests
         public async Task CanObserveStatePartially()
         {
             // Arrange
-            var streamProvider = new InMemoryEventStreamProvider<StreamedEvent>();
+            var streamProvider = new CustomEventStreamProvider<StreamedEvent>();
 
             var eventStore = EventStoreBuilder<StreamedEvent>
                 .New()
