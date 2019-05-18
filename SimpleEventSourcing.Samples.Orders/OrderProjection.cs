@@ -8,9 +8,9 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
-using static SimpleEventSourcing.Samples.Orders.Configuration;
+using static SimpleEventSourcing.Samples.Delivery.Configuration;
 
-namespace SimpleEventSourcing.Samples.Orders
+namespace SimpleEventSourcing.Samples.Delivery
 {
     public class OrderProjection : Projection<StreamedEvent>
     {

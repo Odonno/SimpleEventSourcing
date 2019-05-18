@@ -17,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples.Inventory", "SimpleEventSourcing.Samples.Inventory\SimpleEventSourcing.Samples.Inventory.csproj", "{FB6806AD-F18C-4278-B1A3-484889E10393}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples.Orders", "SimpleEventSourcing.Samples.Orders\SimpleEventSourcing.Samples.Orders.csproj", "{DEEEA1A3-8F0B-4791-8B6C-E84125177959}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples.Delivery", "SimpleEventSourcing.Samples.Orders\SimpleEventSourcing.Samples.Delivery.csproj", "{DEEEA1A3-8F0B-4791-8B6C-E84125177959}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleEventSourcing.Samples.Events", "SimpleEventSourcing.Samples.Events\SimpleEventSourcing.Samples.Events.csproj", "{E08EEF9B-7EDE-49D8-97B1-FC0833B61874}"
 EndProject

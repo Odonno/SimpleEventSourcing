@@ -24,7 +24,7 @@ const shopService = {
 const inventoryService = {
     url: 'http://localhost:50330/',
 };
-const orderService = {
+const deliveryService = {
     url: 'http://localhost:50336/',
 };
 const eventHistoryService = {
@@ -247,7 +247,7 @@ type ShopAction =
     | ResetCartStartedAction | ResetCartSucceedAction | ResetCartFailedAction
     | UpsertCartAction;
 
-type OrdersAction =
+type DeliveryAction =
     ValidateOrderStartedAction | ValidateOrderSucceedAction | ValidateOrderFailedAction
     | CancelOrderStartedAction | CancelOrderSucceedAction | CancelOrderFailedAction
     | UpsertOrderAction;
@@ -264,7 +264,7 @@ type EventAction =
 type Action =
     AppAction
     | ShopAction
-    | OrdersAction
+    | DeliveryAction
     | InventoryAction
     | EventAction;
 
@@ -312,7 +312,7 @@ const actionsCreator = {
         upsert: (itemAndQuantity: { quantity: number, itemId: string }) =>
             <UpsertCartAction>({ type: "SHOP_UPSERT", itemAndQuantity })
     },
-    orders: {
+    delivery: {
         validate: {
             started: (payload: any) => <ValidateOrderStartedAction>({ type: "ORDER_VALIDATE_STARTED", payload }),
             succeed: () => <ValidateOrderSucceedAction>({ type: "ORDER_VALIDATE_SUCCEED" }),
@@ -1064,14 +1064,14 @@ const ordersComponent$ = combineLatest(ordersChange$, itemsChange$).pipe(
                                         className: "button is-rounded is-primary is-outlined",
                                         style: { fontSize: '12px' },
                                         disabled: !canOrder,
-                                        onclick: () => dispatch(actionsCreator.orders.validate.started({
+                                        onclick: () => dispatch(actionsCreator.delivery.validate.started({
                                             orderId: order.id
                                         }))
                                     }, ["validate order"]) : null,
                                     (!order.isConfirmed && !order.isCanceled) ? h("button", {
                                         className: "button is-rounded is-danger is-outlined",
                                         style: { fontSize: '12px', marginLeft: '10px' },
-                                        onclick: () => dispatch(actionsCreator.orders.cancel.started({
+                                        onclick: () => dispatch(actionsCreator.delivery.cancel.started({
                                             orderId: order.id
                                         }))
                                     }, ["cancel order"]) : null,
@@ -1348,7 +1348,7 @@ const loadAppEpic$ = action$.pipe(
         forkJoin([
             ajax.getJSON<Item[]>(inventoryService.url + "api/all"),
             ajax.getJSON<Cart>(shopService.url + "api/cart"),
-            ajax.getJSON<Order[]>(orderService.url + "api/all"),
+            ajax.getJSON<Order[]>(deliveryService.url + "api/all"),
             ajax.getJSON<Event[]>(eventHistoryService.url + "api/events")
         ]).pipe(
             map(([items, cart, orders, events]) => {
@@ -1402,9 +1402,9 @@ const orderEpic$ = action$.pipe(
 const validateOrderEpic$ = action$.pipe(
     ofType("ORDER_VALIDATE_STARTED"),
     mergeMap((action: ValidateOrderStartedAction) =>
-        ajax.post(orderService.url + "api/validate", action.payload, httpHeaders).pipe(
-            map(_ => actionsCreator.orders.validate.succeed()),
-            catchError(error => of(actionsCreator.orders.validate.failed(error)))
+        ajax.post(deliveryService.url + "api/validate", action.payload, httpHeaders).pipe(
+            map(_ => actionsCreator.delivery.validate.succeed()),
+            catchError(error => of(actionsCreator.delivery.validate.failed(error)))
         )
     )
 );
@@ -1412,9 +1412,9 @@ const validateOrderEpic$ = action$.pipe(
 const cancelOrderEpic$ = action$.pipe(
     ofType("ORDER_CANCEL_STARTED"),
     mergeMap((action: CancelOrderStartedAction) =>
-        ajax.post(orderService.url + "api/cancel", action.payload, httpHeaders).pipe(
-            map(_ => actionsCreator.orders.cancel.succeed()),
-            catchError(error => of(actionsCreator.orders.cancel.failed(error)))
+        ajax.post(deliveryService.url + "api/cancel", action.payload, httpHeaders).pipe(
+            map(_ => actionsCreator.delivery.cancel.succeed()),
+            catchError(error => of(actionsCreator.delivery.cancel.failed(error)))
         )
     )
 );
@@ -1486,9 +1486,9 @@ cartConnection.start().catch(error => {
     return console.error(error.toString());
 });
 
-const orderConnection = new HubConnectionBuilder().withUrl(orderService.url + "order").build();
+const orderConnection = new HubConnectionBuilder().withUrl(deliveryService.url + "order").build();
 orderConnection.on("Sync", order => {
-    dispatch(actionsCreator.orders.upsert(order));
+    dispatch(actionsCreator.delivery.upsert(order));
 });
 orderConnection.start().catch(error => {
     return console.error(error.toString());

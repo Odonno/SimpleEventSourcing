@@ -16,10 +16,10 @@ using SimpleEventSourcing.Samples.Providers;
 using System.Threading.Tasks;
 using SimpleEventSourcing.Samples.Events;
 using Converto;
-using static SimpleEventSourcing.Samples.Orders.Configuration;
+using static SimpleEventSourcing.Samples.Delivery.Configuration;
 using static SimpleEventSourcing.Extensions;
 
-namespace SimpleEventSourcing.Samples.Orders
+namespace SimpleEventSourcing.Samples.Delivery
 {
     public class Program
     {
@@ -39,7 +39,7 @@ namespace SimpleEventSourcing.Samples.Orders
                 {
                     s.AddSwaggerGen(c =>
                     {
-                        c.SwaggerDoc("v1", new Info { Title = "Orders API", Version = "v1" });
+                        c.SwaggerDoc("v1", new Info { Title = "Delivery API", Version = "v1" });
                         c.GenerateTagadaSwaggerDoc();
                     });
                 })
@@ -96,7 +96,7 @@ namespace SimpleEventSourcing.Samples.Orders
 
                     app.UseSwaggerUI(c =>
                     {
-                        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Orders API V1");
+                        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Delivery API V1");
                     });
                 })
                 .Build()
