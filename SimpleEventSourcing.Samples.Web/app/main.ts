@@ -156,7 +156,7 @@ type ResetCartFailedAction = {
 
 type UpsertCartAction = {
     type: "SHOP_UPSERT",
-    itemAndQuantity: { itemId: string, quantity: number }
+    cart: Cart
 };
 
 type ValidateOrderStartedAction = {
@@ -309,8 +309,8 @@ const actionsCreator = {
             succeed: () => <ResetCartSucceedAction>({ type: "SHOP_RESET_CART_SUCCEED" }),
             failed: (error: any) => <ResetCartFailedAction>({ type: "SHOP_RESET_CART_FAILED", error })
         },
-        upsert: (itemAndQuantity: { quantity: number, itemId: string }) =>
-            <UpsertCartAction>({ type: "SHOP_UPSERT", itemAndQuantity })
+        upsert: (cart: Cart) =>
+            <UpsertCartAction>({ type: "SHOP_UPSERT", cart })
     },
     delivery: {
         validate: {
@@ -627,39 +627,10 @@ const reduce = (state: State, action: Action): State => {
         };
     }
     if (action.type === "SHOP_UPSERT") {
-        const isNew = state.cart.items.filter(i => i.itemId === action.itemAndQuantity.itemId).length <= 0;
-        const toRemove = action.itemAndQuantity.quantity === 0;
-
-        if (toRemove) {
-            return {
-                ...state,
-                cart: {
-                    ...state.cart,
-                    items: state.cart.items.filter(i => i.itemId !== action.itemAndQuantity.itemId)
-                }
-            };
-        } else if (isNew) {
-            return {
-                ...state,
-                cart: {
-                    ...state.cart,
-                    items: [...state.cart.items, action.itemAndQuantity]
-                }
-            };
-        } else {
-            return {
-                ...state,
-                cart: {
-                    ...state.cart,
-                    items: state.cart.items.map(i => {
-                        if (i.itemId === action.itemAndQuantity.itemId) {
-                            return action.itemAndQuantity;
-                        }
-                        return i;
-                    })
-                }
-            };
-        }
+        return {
+            ...state,
+            cart: action.cart
+        };
     }
     if (action.type === "ORDER_UPSERT") {
         const isNew = state.orders.filter(order => order.id === action.order.id).length <= 0;
@@ -825,7 +796,7 @@ const navbar$ = pageChange$.pipe(
             className: "navbar-item",
             style: getNavBarItemStyle("orders"),
             onclick: () => dispatch(actionsCreator.app.changePage("orders"))
-        }, ["Orders"]);
+        }, ["Delivery"]);
         const inventoryLink = h("a", {
             className: "navbar-item",
             style: getNavBarItemStyle("inventory"),
@@ -1479,8 +1450,8 @@ eventConnection.start().catch(error => {
 });
 
 const cartConnection = new HubConnectionBuilder().withUrl(shopService.url + "cart").build();
-cartConnection.on("Sync", itemAndQuantity => {
-    dispatch(actionsCreator.shop.upsert(itemAndQuantity));
+cartConnection.on("Sync", cart => {
+    dispatch(actionsCreator.shop.upsert(cart));
 });
 cartConnection.start().catch(error => {
     return console.error(error.toString());

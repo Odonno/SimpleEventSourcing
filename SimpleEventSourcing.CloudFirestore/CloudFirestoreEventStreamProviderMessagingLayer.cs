@@ -30,7 +30,7 @@ namespace SimpleEventSourcing.CloudFirestore
 
         private static bool ShouldListenForNewStreams(DateTime startListeningAt, Timestamp? documentCreatedAt)
         {
-            return documentCreatedAt.HasValue && documentCreatedAt.Value.ToDateTime() > startListeningAt;
+            return documentCreatedAt.HasValue && documentCreatedAt.Value.ToDateTime() > startListeningAt.ToUniversalTime();
         }
         private static IObservable<DocumentSnapshot> ListenNewStreams(CollectionReference streamsCollectionReference)
         {

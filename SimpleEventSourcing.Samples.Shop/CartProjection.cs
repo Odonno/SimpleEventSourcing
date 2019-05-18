@@ -51,7 +51,7 @@ namespace SimpleEventSourcing.Samples.Shop
                 using (var connection = GetDatabaseConnection())
                 {
                     bool canUpdate = connection
-                        .Query<int>("SELECT COUNT(*) FROM [Cart] WHERE [ItemId] = @ItemId", new { data.ItemId })
+                        .Query<int>("SELECT COUNT(*) FROM [Cart] WHERE [Id] = @ItemId", new { data.ItemId })
                         .Single() > 0;
 
                     if (canUpdate)
@@ -60,7 +60,7 @@ namespace SimpleEventSourcing.Samples.Shop
                             @"
                             UPDATE [Cart] 
                             SET [Quantity] = [Quantity] + @Quantity
-                            WHERE [ItemId] = @ItemId
+                            WHERE [Id] = @ItemId
                             ",
                             new { data.ItemId, data.Quantity }
                         );
@@ -70,7 +70,7 @@ namespace SimpleEventSourcing.Samples.Shop
                         connection.Execute(
                             @"
                             INSERT INTO [Cart] 
-                            ([ItemId], [Quantity])
+                            ([Id], [Quantity])
                             VALUES (@ItemId, @Quantity)
                             ",
                             new { data.ItemId, data.Quantity }
@@ -90,13 +90,13 @@ namespace SimpleEventSourcing.Samples.Shop
                 using (var connection = GetDatabaseConnection())
                 {
                     int quantityInCart = connection
-                        .Query<int>("SELECT [Quantity] FROM [Cart] WHERE [ItemId] = @ItemId", new { data.ItemId })
+                        .Query<int>("SELECT [Quantity] FROM [Cart] WHERE [Id] = @ItemId", new { data.ItemId })
                         .Single();
                     bool canDelete = data.Quantity >= quantityInCart;
 
                     if (canDelete)
                     {
-                        connection.Execute("DELETE FROM [Cart] WHERE [ItemId] = @ItemId", new { data.ItemId });
+                        connection.Execute("DELETE FROM [Cart] WHERE [Id] = @ItemId", new { data.ItemId });
                     }
                     else
                     {
@@ -104,7 +104,7 @@ namespace SimpleEventSourcing.Samples.Shop
                             @"
                             UPDATE [Cart] 
                             SET [Quantity] = [Quantity] - @Quantity
-                            WHERE [ItemId] = @ItemId
+                            WHERE [Id] = @ItemId
                             ",
                             new { data.ItemId, data.Quantity }
                         );
@@ -137,7 +137,7 @@ namespace SimpleEventSourcing.Samples.Shop
                 var cart = new Cart
                 {
                     Items = connection
-                        .Query<ItemAndQuantity>("SELECT [ItemId], [Quantity] FROM [Cart]")
+                        .Query<ItemAndQuantity>("SELECT [Id] AS ItemId, [Quantity] FROM [Cart]")
                         .ToList()
                 };
 

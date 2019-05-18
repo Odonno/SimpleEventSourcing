@@ -24,7 +24,7 @@ namespace SimpleEventSourcing.CloudFirestore
         private static bool ShouldListenForNewEvents(bool isNewStream, DateTime startListeningAt, Timestamp? documentCreatedAt)
         {
             return isNewStream ||
-                (documentCreatedAt.HasValue && documentCreatedAt.Value.ToDateTime() > startListeningAt);
+                (documentCreatedAt.HasValue && documentCreatedAt.Value.ToDateTime() > startListeningAt.ToUniversalTime());
         }
         public IObservable<TEvent> ListenForNewEvents(bool isNewStream)
         {

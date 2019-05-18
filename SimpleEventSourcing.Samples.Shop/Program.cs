@@ -114,7 +114,6 @@ namespace SimpleEventSourcing.Samples.Shop
                     @"
                     CREATE TABLE IF NOT EXISTS [Cart] (
                         [Id] VARCHAR(36) NOT NULL PRIMARY KEY,
-                        [ItemId] INTEGER NOT NULL,
                         [Quantity] INTEGER NOT NULL
                     );
                     "
@@ -129,7 +128,7 @@ namespace SimpleEventSourcing.Samples.Shop
                 return new Cart
                 {
                     Items = connection
-                        .Query<ItemAndQuantity>("SELECT [ItemId], [Quantity] FROM [Cart]")
+                        .Query<ItemAndQuantity>("SELECT [Id] AS ItemId, [Quantity] FROM [Cart]")
                         .ToList()
                 };
             }
