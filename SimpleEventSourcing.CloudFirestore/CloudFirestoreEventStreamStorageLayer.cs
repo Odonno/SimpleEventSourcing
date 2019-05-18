@@ -13,15 +13,18 @@ namespace SimpleEventSourcing.CloudFirestore
         private readonly DocumentReference _streamDocumentReference;
         private readonly CollectionReference _eventsCollectionReference;
         private readonly ICloudFirestoreEventConverter<TEvent> _firestoreEventConverter;
+        private readonly ICloudFirestoreEventStreamConverter _firestoreEventStreamConverter;
 
         public CloudFirestoreEventStreamStorageLayer(
             DocumentReference streamDocumentReference,
-            ICloudFirestoreEventConverter<TEvent> firestoreEventConverter
+            ICloudFirestoreEventConverter<TEvent> firestoreEventConverter,
+            ICloudFirestoreEventStreamConverter firestoreEventStreamConverter
         )
         {
             _streamDocumentReference = streamDocumentReference;
             _eventsCollectionReference = streamDocumentReference.Collection(EventsCollectionName);
             _firestoreEventConverter = firestoreEventConverter;
+            _firestoreEventStreamConverter = firestoreEventStreamConverter;
         }
 
         private DocumentReference GetEventDocumentReference(TEvent @event)
@@ -71,7 +74,7 @@ namespace SimpleEventSourcing.CloudFirestore
             var streamDocument = await _streamDocumentReference.GetSnapshotAsync();
             if (streamDocument.Exists)
             {
-                var details = streamDocument.ConvertTo<EventStreamDetails>();
+                var details = _firestoreEventStreamConverter.FromFirestore(streamDocument);
                 return details?.LastPosition;
             }
 

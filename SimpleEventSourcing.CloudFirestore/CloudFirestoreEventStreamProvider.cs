@@ -14,7 +14,8 @@ namespace SimpleEventSourcing.CloudFirestore
 
         public CloudFirestoreEventStreamProvider(
             FirestoreDb firestoreDb,
-            ICloudFirestoreEventConverter<TEvent> firestoreEventConverter
+            ICloudFirestoreEventConverter<TEvent> firestoreEventConverter,
+            ICloudFirestoreEventStreamConverter firestoreEventStreamConverter
         )
         {
             var streamsCollectionReference = firestoreDb.Collection(StreamsCollectionName);
@@ -25,7 +26,7 @@ namespace SimpleEventSourcing.CloudFirestore
 
                 return new EventStream<TEvent>(
                     streamId,
-                    new CloudFirestoreEventStreamStorageLayer<TEvent>(streamDocumentReference, firestoreEventConverter),
+                    new CloudFirestoreEventStreamStorageLayer<TEvent>(streamDocumentReference, firestoreEventConverter, firestoreEventStreamConverter),
                     new CloudFirestoreEventStreamMessagingLayer<TEvent>(streamDocumentReference, firestoreEventConverter)
                 );
             }

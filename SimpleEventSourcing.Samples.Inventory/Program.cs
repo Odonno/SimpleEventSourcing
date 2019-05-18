@@ -65,7 +65,7 @@ namespace SimpleEventSourcing.Samples.Inventory
                     HandleDatabaseCreation();
 
                     var dataProvider = new CloudFirestoreProvider("event-sourcing-da233", "firebase.json");
-                    var cloudFirestoreStreamProvider = new CloudFirestoreEventStreamProvider<StreamedEvent>(dataProvider.Database, new StreamedEventFirestoreConverter());
+                    var cloudFirestoreStreamProvider = new CloudFirestoreEventStreamProvider<StreamedEvent>(dataProvider.Database, new StreamedEventFirestoreConverter(), new EventStreamFirestoreConverter());
 
                     var eventStore = EventStoreBuilder<StreamedEvent>
                         .New()
