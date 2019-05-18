@@ -7,7 +7,7 @@ using Xunit;
 
 namespace SimpleEventSourcing.UnitTests
 {
-    public class EventViewTest
+    public class ProjectionTest
     {
         [Fact]
         public void CanReadInitialState()
@@ -15,7 +15,7 @@ namespace SimpleEventSourcing.UnitTests
             // Arrange
             var streamProvider = new CustomEventStreamProvider<StreamedEvent>();
 
-            var eventView = new TotalCostCartEventView(streamProvider);
+            var eventView = new TotalCostCartProjection(streamProvider);
 
             // Act
 
@@ -37,7 +37,7 @@ namespace SimpleEventSourcing.UnitTests
                 .WithApplyFunction(new ResetCartApplyFunction())
                 .Build();
 
-            var eventView = new TotalCostCartEventView(streamProvider);
+            var eventView = new TotalCostCartProjection(streamProvider);
 
             // Act
             int eventListenedCount = 0;
@@ -81,7 +81,7 @@ namespace SimpleEventSourcing.UnitTests
                 .WithApplyFunction(new ResetCartApplyFunction())
                 .Build();
 
-            var eventView = new TotalCostCartEventView(streamProvider);
+            var eventView = new TotalCostCartProjection(streamProvider);
 
             // Act
             int eventListenedCount = 0;
@@ -121,8 +121,8 @@ namespace SimpleEventSourcing.UnitTests
                 .WithApplyFunction(new ResetCartApplyFunction())
                 .Build();
 
-            var totalCostCartEventView = new TotalCostCartEventView(streamProvider);
-            var ordersCartEventView = new OrdersCartEventView(streamProvider);
+            var totalCostCartEventView = new TotalCostCartProjection(streamProvider);
+            var ordersCartEventView = new OrdersCartProjection(streamProvider);
 
             // Act
             TotalCostCartState lastTotalCostCartState = null;
@@ -175,7 +175,7 @@ namespace SimpleEventSourcing.UnitTests
                 .WithApplyFunction(new ResetCartApplyFunction())
                 .Build();
 
-            var ordersCartEventView = new OrdersCartEventView(streamProvider);
+            var ordersCartEventView = new OrdersCartProjection(streamProvider);
 
             // Act
             int lastNumberOfItems = 0;

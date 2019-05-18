@@ -75,7 +75,7 @@ namespace SimpleEventSourcing.Samples.Shop
                         .WithApplyFunction(new CreateOrderFromCartApplyFunction())
                         .Build();
 
-                    var cartEventView = new CartEventView(streamProvider);
+                    var projection = new CartProjection(streamProvider);
 
                     app.Map("/api")
                         .Get("/cart", GetCart)
@@ -91,7 +91,7 @@ namespace SimpleEventSourcing.Samples.Shop
                         routes.MapHub<CartHub>("/cart");
                     });
 
-                    cartEventView.ObserveEntityChange().Subscribe(async entity =>
+                    projection.ObserveEntityChange().Subscribe(async entity =>
                     {
                         var hub = app.ApplicationServices.GetRequiredService<IHubContext<CartHub>>();
                         await hub.Clients.All.SendAsync("Sync", entity);

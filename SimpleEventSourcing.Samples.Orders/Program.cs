@@ -74,7 +74,7 @@ namespace SimpleEventSourcing.Samples.Orders
                         .WithApplyFunction(new CancelOrderApplyFunction())
                         .Build();
 
-                    var orderEventView = new OrderEventView(streamProvider);
+                    var projection = new OrderProjection(streamProvider);
 
                     app.Map("/api")
                         .Get("/all", GetAllOrders)
@@ -88,7 +88,7 @@ namespace SimpleEventSourcing.Samples.Orders
                         routes.MapHub<OrderHub>("/order");
                     });
 
-                    orderEventView.ObserveEntityChange().Subscribe(async entity =>
+                    projection.ObserveEntityChange().Subscribe(async entity =>
                     {
                         var hub = app.ApplicationServices.GetRequiredService<IHubContext<OrderHub>>();
                         await hub.Clients.All.SendAsync("Sync", entity);

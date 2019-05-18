@@ -5,17 +5,36 @@ using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Reactive.Threading.Tasks;
 using static SimpleEventSourcing.Samples.Shop.Configuration;
 
 namespace SimpleEventSourcing.Samples.Shop
 {
-    public class CartEventView : EventView<StreamedEvent>
+    public class CartProjection : Projection<StreamedEvent>
     {
         private readonly Subject<Cart> _updatedEntitySubject = new Subject<Cart>();
 
-        public CartEventView(IEventStreamProvider<StreamedEvent> streamProvider) : base(streamProvider)
+        public CartProjection(IEventStreamProvider<StreamedEvent> streamProvider) : base(streamProvider)
         {
-            // TODO : Handle all events
+            const string searchedStream = "cart";
+
+            // Detect new events from existing streams
+            var newEventsFromExistingStreams = streamProvider
+                .GetAllStreamsAsync()
+                .ToObservable()
+                .SelectMany(stream => stream)
+                .Where(stream => stream.Id == searchedStream)
+                .SelectMany(stream => stream.ListenForNewEvents(false));
+
+            // Detect new events from new streams
+            var newEventsFromNewStreams = streamProvider
+                .ListenForNewStreams()
+                .Where(stream => stream.Id == searchedStream)
+                .SelectMany(stream => stream.ListenForNewEvents(true));
+
+            // Handle new events
+            Observable.Merge(newEventsFromExistingStreams, newEventsFromNewStreams)
+                .Subscribe(@event => Handle(@event));
         }
 
         public IObservable<Cart> ObserveEntityChange()

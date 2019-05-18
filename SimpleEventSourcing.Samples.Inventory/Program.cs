@@ -75,7 +75,7 @@ namespace SimpleEventSourcing.Samples.Inventory
                         .WithApplyFunction(new SupplyItemApplyFunction())
                         .Build();
 
-                    var itemEventView = new ItemEventView(cloudFirestoreStreamProvider);
+                    var projection = new ItemProjection(cloudFirestoreStreamProvider);
 
                     app.Map("/api")
                         .Get("/all", GetAllItems)
@@ -90,7 +90,7 @@ namespace SimpleEventSourcing.Samples.Inventory
                         routes.MapHub<ItemHub>("/item");
                     });
 
-                    itemEventView.ObserveEntityChange().Subscribe(async entity =>
+                    projection.ObserveEntityChange().Subscribe(async entity =>
                     {
                         var hub = app.ApplicationServices.GetRequiredService<IHubContext<ItemHub>>();
                         await hub.Clients.All.SendAsync("Sync", entity);

@@ -7,17 +7,36 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Reactive.Threading.Tasks;
 using static SimpleEventSourcing.Samples.Orders.Configuration;
 
 namespace SimpleEventSourcing.Samples.Orders
 {
-    public class OrderEventView : EventView<StreamedEvent>
+    public class OrderProjection : Projection<StreamedEvent>
     {
         private readonly Subject<Order> _updatedEntitySubject = new Subject<Order>();
 
-        public OrderEventView(IEventStreamProvider<StreamedEvent> streamProvider) : base(streamProvider)
+        public OrderProjection(IEventStreamProvider<StreamedEvent> streamProvider) : base(streamProvider)
         {
-            // TODO : Handle all events
+            const string searchedStreams = "order-";
+
+            // Detect new events from existing streams
+            var newEventsFromExistingStreams = streamProvider
+                .GetAllStreamsAsync()
+                .ToObservable()
+                .SelectMany(stream => stream)
+                .Where(stream => stream.Id.StartsWith(searchedStreams))
+                .SelectMany(stream => stream.ListenForNewEvents(false));
+
+            // Detect new events from new streams
+            var newEventsFromNewStreams = streamProvider
+                .ListenForNewStreams()
+                .Where(stream => stream.Id.StartsWith(searchedStreams))
+                .SelectMany(stream => stream.ListenForNewEvents(true));
+
+            // Handle new events
+            Observable.Merge(newEventsFromExistingStreams, newEventsFromNewStreams)
+                .Subscribe(@event => Handle(@event));
         }
 
         public IObservable<Order> ObserveEntityChange()

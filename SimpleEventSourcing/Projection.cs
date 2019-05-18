@@ -5,18 +5,20 @@ using System.Reactive.Linq;
 namespace SimpleEventSourcing
 {
     /// <summary>
-    /// The base class for creating Event View (Read Model of an Event Sourcing architecture).
+    /// The base class for creating Projections (Read Model of an Event Sourcing architecture).
     /// This class does not contain a State and is mainly used to execute actions like updating a database after each event.
     /// </summary>
-    public abstract class EventView<TEvent>
+    public abstract class Projection<TEvent>
         where TEvent : StreamedEvent
     {
-        protected readonly IEventStreamProvider<StreamedEvent> _streamProvider;
+        protected readonly IEventStreamProvider<TEvent> _streamProvider;
 
-        public EventView(IEventStreamProvider<StreamedEvent> streamProvider)
+        public Projection(IEventStreamProvider<TEvent> streamProvider)
         {
             _streamProvider = streamProvider;
         }
+
+        protected abstract void Handle(TEvent @event, bool replayed = false);
 
         /// <summary>
         /// Replay a single event.
@@ -34,7 +36,5 @@ namespace SimpleEventSourcing
         {
             events.ToObservable().Subscribe(Replay);
         }
-
-        protected abstract void Handle(TEvent @event, bool replayed = false);
     }
 }

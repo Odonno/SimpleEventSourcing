@@ -5,16 +5,15 @@ using System.Reactive.Subjects;
 namespace SimpleEventSourcing
 {
     /// <summary>
-    /// The base class for creating Event View (Read Model of an Event Sourcing architecture).
+    /// The base class for creating Projection (Read Model of an Event Sourcing architecture).
     /// The State is a real live-data updated whenever an observed event is pushed.
     /// </summary>
-    public abstract class InMemoryEventView<TEvent, TState>
+    public abstract class EntityProjection<TEvent, TState>
         where TEvent : StreamedEvent
         where TState : class, new()
     {
         private readonly Subject<TState> _stateSubject = new Subject<TState>();
-
-        protected readonly IEventStreamProvider<StreamedEvent> _streamProvider;
+        protected readonly IEventStreamProvider<TEvent> _streamProvider;
 
         /// <summary>
         /// Gets the current state of the view.
@@ -26,17 +25,17 @@ namespace SimpleEventSourcing
         /// </summary>
         /// <param name="streamProvider">The provider of event streams.</param>
         /// <param name="initialState">The initial state to use in the view; if <c>null</c>, a default value is constructed using <c>new TState()</c>.</param>
-        protected InMemoryEventView(IEventStreamProvider<StreamedEvent> streamProvider, TState initialState = null)
+        protected EntityProjection(IEventStreamProvider<TEvent> streamProvider, TState initialState = null)
         {
             _streamProvider = streamProvider;
             State = initialState ?? new TState();
+        }
 
-            // TODO
-            //events.Subscribe(@event =>
-            //{
-            //    State = Reduce(State, @event);
-            //    _stateSubject.OnNext(State);
-            //});
+        protected void Handle(TEvent @event)
+        {
+            var state = Reduce(State, @event);
+            State = state;
+            _stateSubject.OnNext(state);
         }
 
         /// <summary>

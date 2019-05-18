@@ -5,30 +5,36 @@ using System;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Reactive.Threading.Tasks;
 using static SimpleEventSourcing.Samples.Inventory.Configuration;
 
 namespace SimpleEventSourcing.Samples.Inventory
 {
-    public class ItemEventView : EventView<StreamedEvent>
+    public class ItemProjection : Projection<StreamedEvent>
     {
         private readonly Subject<Item> _updatedEntitySubject = new Subject<Item>();
         
-        public ItemEventView(IEventStreamProvider<StreamedEvent> streamProvider) : base(streamProvider)
+        public ItemProjection(IEventStreamProvider<StreamedEvent> streamProvider) : base(streamProvider)
         {
-            // TODO : Handle all events
+            const string searchedStreams = "item-";
 
-            // TODO : Extract method
-            // Detect new streams
-            streamProvider.ListenForNewStreams().Subscribe(stream =>
-            {
-                if (!stream.Id.StartsWith("item-"))
-                    return;
+            // Detect new events from existing streams
+            var newEventsFromExistingStreams = streamProvider
+                .GetAllStreamsAsync()
+                .ToObservable()
+                .SelectMany(stream => stream)
+                .Where(stream => stream.Id.StartsWith(searchedStreams))
+                .SelectMany(stream => stream.ListenForNewEvents(false));
 
-                stream.ListenForNewEvents(true).Subscribe(@event =>
-                {
-                    Handle(@event);
-                });
-            });
+            // Detect new events from new streams
+            var newEventsFromNewStreams = streamProvider
+                .ListenForNewStreams()
+                .Where(stream => stream.Id.StartsWith(searchedStreams))
+                .SelectMany(stream => stream.ListenForNewEvents(true));
+
+            // Handle new events
+            Observable.Merge(newEventsFromExistingStreams, newEventsFromNewStreams)
+                .Subscribe(@event => Handle(@event));
         }
 
         public IObservable<Item> ObserveEntityChange()

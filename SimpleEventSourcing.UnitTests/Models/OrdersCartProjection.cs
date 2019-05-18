@@ -1,4 +1,7 @@
-﻿using System.Collections.Immutable;
+﻿using System;
+using System.Collections.Immutable;
+using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 
 namespace SimpleEventSourcing.UnitTests.Models
 {
@@ -7,17 +10,21 @@ namespace SimpleEventSourcing.UnitTests.Models
         public ImmutableDictionary<string, long> Items { get; set; } = ImmutableDictionary<string, long>.Empty;
         public int NumberOfItems { get; set; }
     }
-    public class OrdersCartEventView : InMemoryEventView<StreamedEvent, OrdersCartState>
+    public class OrdersCartProjection : EntityProjection<StreamedEvent, OrdersCartState>
     {
-        public OrdersCartEventView(IEventStreamProvider<StreamedEvent> streamProvider, OrdersCartState initialState = null) : base(streamProvider, initialState)
+        public OrdersCartProjection(IEventStreamProvider<StreamedEvent> streamProvider, OrdersCartState initialState = null) : base(streamProvider, initialState)
         {
+            _streamProvider.GetStreamAsync("cart")
+                .ToObservable()
+                .SelectMany(stream => stream.ListenForNewEvents(false))
+                .Subscribe(Handle);
         }
-
+        
         protected override OrdersCartState Reduce(OrdersCartState state, StreamedEvent @event)
         {
-            if (@event.EventName == nameof(AddItemInCartCommand))
+            if (@event.EventName == nameof(ItemAddedInCart))
             {
-                var data = @event.Data as AddItemInCartCommand;
+                var data = @event.Data as ItemAddedInCart;
 
                 if (state.Items.ContainsKey(data.ItemName))
                 {
@@ -36,17 +43,17 @@ namespace SimpleEventSourcing.UnitTests.Models
                     };
                 }
             }
-            if (@event.EventName == nameof(RemoveItemFromCartCommand))
+            if (@event.EventName == nameof(ItemRemovedFromCart))
             {
-                var data = @event.Data as RemoveItemFromCartCommand;
+                var data = @event.Data as ItemRemovedFromCart;
 
                 return new OrdersCartState
                 {
                     Items = state.Items.SetItem(data.ItemName, state.Items[data.ItemName] - 1),
-                    NumberOfItems = state.NumberOfItems - 1
+                    NumberOfItems = state.NumberOfItems - data.NumberOfUnits
                 };
             }
-            if (@event.EventName == nameof(ResetCartCommand))
+            if (@event.EventName == nameof(CartReset))
             {
                 return new OrdersCartState
                 {
