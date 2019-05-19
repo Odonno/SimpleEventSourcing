@@ -65,7 +65,7 @@ namespace SimpleEventSourcing.CloudFirestore
             var querySnapshot = await _eventsCollectionReference.GetSnapshotAsync();
 
             return querySnapshot.Documents
-                .Select(snapshot => snapshot.ConvertTo<TEvent>())
+                .Select(_firestoreEventConverter.FromFirestore)
                 .ToList();
         }
 
@@ -88,7 +88,7 @@ namespace SimpleEventSourcing.CloudFirestore
                 .GetSnapshotAsync();
 
             return querySnapshot.Documents
-                .Select(snapshot => snapshot.ConvertTo<TEvent>())
+                .Select(_firestoreEventConverter.FromFirestore)
                 .SingleOrDefault();
         }
 
@@ -98,7 +98,7 @@ namespace SimpleEventSourcing.CloudFirestore
                 .Document(position.ToString())
                 .GetSnapshotAsync();
 
-            return snapshot.ConvertTo<TEvent>();
+            return _firestoreEventConverter.FromFirestore(snapshot);
         }
     }
 }

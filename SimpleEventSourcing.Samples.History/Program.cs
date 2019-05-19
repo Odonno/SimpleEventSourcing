@@ -3,16 +3,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using System.Collections.Generic;
-using System;
-using System.Linq;
 using Swashbuckle.AspNetCore.Swagger;
 using Tagada.Swagger;
-using Newtonsoft.Json;
-using Microsoft.Data.Sqlite;
-using System.Data;
-using System.Dynamic;
-using Dapper;
 using Newtonsoft.Json.Serialization;
+using SimpleEventSourcing.Samples.Providers;
+using SimpleEventSourcing.CloudFirestore;
+using System.Threading.Tasks;
 
 namespace SimpleEventSourcing.Samples.History
 {
@@ -64,10 +60,12 @@ namespace SimpleEventSourcing.Samples.History
 
                     app.UseCors("CorsPolicy");
 
-                    HandleDatabaseCreation();
+                    var dataProvider = new CloudFirestoreProvider("event-sourcing-da233", "firebase.json");
+                    var cloudFirestoreStreamProvider = new CloudFirestoreEventStreamProvider<StreamedEvent>(dataProvider.Database, new StreamedEventFirestoreConverter(), new EventStreamFirestoreConverter());
 
                     app.Map("/api")
-                        .Get("/events", GetAllEvents)
+                        .GetAsync("/streams", (GetStreamsQuery _) => cloudFirestoreStreamProvider.GetAllStreamsAsync())
+                        .GetAsync("/streams/{streamId}/events", (GetStreamEventsQuery query) => GetStreamEventsAsync(cloudFirestoreStreamProvider, query.StreamId))
                         .AddSwagger()
                         .Use();
 
@@ -80,60 +78,17 @@ namespace SimpleEventSourcing.Samples.History
                 .Run();
         }
 
-        private static SqliteConnection GetDatabaseConnection()
+        private static async Task<IEnumerable<StreamedEvent>> GetStreamEventsAsync(CloudFirestoreEventStreamProvider<StreamedEvent> cloudFirestoreStreamProvider, string streamId)
         {
-            var connection = new SqliteConnection("Data Source=../EventsDatabase.db");
-            if (connection.State != ConnectionState.Open)
-                connection.Open();
-
-            return connection;
+            var stream = await cloudFirestoreStreamProvider.GetStreamAsync(streamId);
+            return await stream.GetAllEventsAsync();
         }
-
-        private static void HandleDatabaseCreation()
-        {
-            using (var connection = GetDatabaseConnection())
-            {
-                connection.Execute(
-                    @"
-                    CREATE TABLE IF NOT EXISTS [Event] (
-                        [Id] VARCHAR(36) NOT NULL PRIMARY KEY,
-                        [EventName] DATETIME NOT NULL,
-                        [Data] INTEGER NOT NULL,
-                        [Metadata] INTEGER NOT NULL
-                    );
-                    "
-                );
-            }
-        }
-
-        public static Func<GetEventsQuery, IEnumerable<StreamedEvent>> GetAllEvents = _ =>
-        {
-            using (var connection = GetDatabaseConnection())
-            {
-                return connection
-                    .Query<EventDbo>("SELECT * FROM [Event] ORDER BY [Id] DESC")
-                    .Select(eventDbo =>
-                    {
-                        return new StreamedEvent
-                        {
-                            Id = eventDbo.Id,
-                            EventName = eventDbo.EventName,
-                            Data = JsonConvert.DeserializeObject<ExpandoObject>(eventDbo.Data),
-                            Metadata = JsonConvert.DeserializeObject<StreamedEventMetadata>(eventDbo.Metadata)
-                        };
-                    })
-                    .ToList();
-            }
-        };
     }
 
-    public class EventDbo
+    public class GetStreamsQuery { }
+
+    public class GetStreamEventsQuery
     {
-        public string Id { get; set; }
-        public string EventName { get; set; }
-        public string Data { get; set; }
-        public string Metadata { get; set; }
+        public string StreamId { get; set; }
     }
-
-    public class GetEventsQuery { }
 }

@@ -59,9 +59,15 @@ type Order = {
     }[];
 };
 
-type Event = {
+type EventStream = {
     id: string;
-    number: number;
+    events?: Event[] | undefined;
+};
+
+type Event = {
+    streamId: string;
+    position: number;
+    id: string;
     eventName: string;
     data: any;
     metadata: {
@@ -99,7 +105,7 @@ type AppLoadSucceedAction = {
     items: Item[],
     cart: Cart,
     orders: Order[],
-    events: Event[]
+    streams: EventStream[]
 };
 type AppLoadFailedAction = {
     type: "APP_LOAD_FAILED",
@@ -230,39 +236,61 @@ type UpsertItemAction = {
     item: Item
 };
 
-type AddEventAction = {
-    type: "EVENT_ADD",
-    event: Event
+type GetEventStreamsAction = {
+    type: "GET_EVENT_STREAMS"
+};
+type GetEventStreamsSucceedAction = {
+    type: "GET_EVENT_STREAMS_SUCCEED",
+    streams: EventStream[]
+};
+type GetEventStreamsFailedAction = {
+    type: "GET_EVENT_STREAMS_FAILED",
+    error: any
+};
+
+type LoadStreamEventsAction = {
+    type: "LOAD_STREAM_EVENTS",
+    streamId: string
+};
+type LoadStreamEventsSucceedAction = {
+    type: "LOAD_STREAM_EVENTS_SUCCEED",
+    streamId: string,
+    events: Event[]
+};
+type LoadStreamEventsFailedAction = {
+    type: "LOAD_STREAM_EVENTS_FAILED",
+    error: any
 };
 
 type AppAction =
-    ChangePageAction | UpdateSearchAction
+    | ChangePageAction | UpdateSearchAction
     | UpdateFormAction | ClearFormAction
     | AppLoadStartedAction | AppLoadSucceedAction | AppLoadFailedAction;
 
 type ShopAction =
-    AddItemInCartStartedAction | AddItemInCartSucceedAction | AddItemInCartFailedAction
+    | AddItemInCartStartedAction | AddItemInCartSucceedAction | AddItemInCartFailedAction
     | RemoveItemFromCartStartedAction | RemoveItemFromCartSucceedAction | RemoveItemFromCartFailedAction
     | OrderStartedAction | OrderSucceedAction | OrderFailedAction
     | ResetCartStartedAction | ResetCartSucceedAction | ResetCartFailedAction
     | UpsertCartAction;
 
 type DeliveryAction =
-    ValidateOrderStartedAction | ValidateOrderSucceedAction | ValidateOrderFailedAction
+    | ValidateOrderStartedAction | ValidateOrderSucceedAction | ValidateOrderFailedAction
     | CancelOrderStartedAction | CancelOrderSucceedAction | CancelOrderFailedAction
     | UpsertOrderAction;
 
 type InventoryAction =
-    CreateItemStartedAction | CreateItemSucceedAction | CreateItemFailedAction
+    | CreateItemStartedAction | CreateItemSucceedAction | CreateItemFailedAction
     | UpdatePriceStartedAction | UpdatePriceSucceedAction | UpdatePriceFailedAction
     | SupplyItemStartedAction | SupplyItemSucceedAction | SupplyItemFailedAction
     | UpsertItemAction;
 
 type EventAction =
-    AddEventAction;
+    | GetEventStreamsAction | GetEventStreamsSucceedAction | GetEventStreamsFailedAction
+    | LoadStreamEventsAction | LoadStreamEventsSucceedAction | LoadStreamEventsFailedAction;
 
 type Action =
-    AppAction
+    | AppAction
     | ShopAction
     | DeliveryAction
     | InventoryAction
@@ -277,8 +305,8 @@ const actionsCreator = {
         clearForm: (formName: string) => <ClearFormAction>({ type: "APP_CLEAR_FORM_ACTION", formName }),
         load: {
             started: () => <AppLoadStartedAction>({ type: "APP_LOAD_STARTED" }),
-            succeed: (items: Item[], cart: Cart, orders: Order[], events: Event[]) =>
-                <AppLoadSucceedAction>({ type: "APP_LOAD_SUCCEED", items, cart, orders, events }),
+            succeed: (items: Item[], cart: Cart, orders: Order[], streams: EventStream[]) =>
+                <AppLoadSucceedAction>({ type: "APP_LOAD_SUCCEED", items, cart, orders, streams }),
             failed: (error: any) => <AppLoadFailedAction>({ type: "APP_LOAD_FAILED", error })
         }
     },
@@ -345,8 +373,17 @@ const actionsCreator = {
         },
         upsert: (item: Item) => <UpsertItemAction>({ type: "INVENTORY_UPSERT_ITEM", item })
     },
-    events: {
-        add: (event: Event) => <AddEventAction>({ type: "EVENT_ADD", event })
+    history: {
+        streams: {
+            started: () => <GetEventStreamsAction>({ type: "GET_EVENT_STREAMS" }),
+            succeed: (streams: EventStream[]) => <GetEventStreamsSucceedAction>({ type: "GET_EVENT_STREAMS_SUCCEED", streams }),
+            failed: (error: any) => <GetEventStreamsFailedAction>({ type: "GET_EVENT_STREAMS_FAILED", error })
+        },
+        loadEvents: {
+            started: (streamId: string) => <LoadStreamEventsAction>({ type: "LOAD_STREAM_EVENTS", streamId }),
+            succeed: (streamId: string, events: Event[]) => <LoadStreamEventsSucceedAction>({ type: "LOAD_STREAM_EVENTS_SUCCEED", streamId, events }),
+            failed: (error: any) => <LoadStreamEventsFailedAction>({ type: "LOAD_STREAM_EVENTS_FAILED", error })
+        }
     }
 };
 
@@ -368,7 +405,7 @@ type State = {
     items: Item[],
     cart: Cart,
     orders: Order[],
-    events: Event[],
+    streams: EventStream[],
     search: string,
     forms: {
         createItem: {
@@ -389,7 +426,7 @@ const initialState: State = {
         items: []
     },
     orders: [],
-    events: [],
+    streams: [],
     search: "",
     forms: {
         createItem: {
@@ -448,7 +485,7 @@ const reduce = (state: State, action: Action): State => {
             items: action.items,
             cart: action.cart,
             orders: action.orders,
-            events: action.events,
+            streams: action.streams,
             forms: {
                 ...state.forms,
                 updatePrice: updatePriceForms,
@@ -704,11 +741,19 @@ const reduce = (state: State, action: Action): State => {
             };
         }
     }
-    if (action.type === "EVENT_ADD") {
+    if (action.type === "LOAD_STREAM_EVENTS_SUCCEED") {
         return {
             ...state,
-            events: [...state.events, action.event]
-        }
+            streams: state.streams.map(stream => {
+                if (stream.id === action.streamId) {
+                    return {
+                        ...stream,
+                        events: action.events
+                    };
+                }
+                return stream;
+            })
+        };
     }
     return state;
 };
@@ -739,8 +784,8 @@ const ordersChange$ = state$.pipe(
     distinctUntilChanged()
 );
 
-const eventsChange$ = state$.pipe(
-    map(state => state.events),
+const streamsChange$ = state$.pipe(
+    map(state => state.streams),
     distinctUntilChanged()
 );
 
@@ -1244,14 +1289,14 @@ const inventoryComponent$ = combineLatest(createItemComponent$, itemListComponen
     })
 );
 
-const eventsComponent$ = eventsChange$.pipe(
-    map(events => {
-        if (events.length === 0) {
+const eventsComponent$ = streamsChange$.pipe(
+    map(streams => {
+        if (streams.length === 0) {
             return h("section", { className: "hero" }, [
                 h("div", { className: "hero-body" }, [
                     h("div", { className: "container" }, [
                         h("div", { className: "title" }, ["No event"]),
-                        h("div", { className: "subtitle" }, ["There is currently no event created..."])
+                        h("div", { className: "subtitle" }, ["There is currently no stream of event created..."])
                     ])
                 ])
             ]);
@@ -1259,17 +1304,30 @@ const eventsComponent$ = eventsChange$.pipe(
 
         return h("section", {}, [
             h("div", { className: "container" }, [
-                ...events.sort((a, b) => b.number - a.number).map(event => {
-                    return h("div", { className: "card", key: event.id.toString(), style: { marginBottom: '10px' } }, [
-                        h("div", { className: "card-header" }, [
-                            h("div", { className: "card-header-title" }, [
-                                "Event #" + event.number + " - " + event.eventName
+                ...streams.sort((a, b) => b.id < a.id ? 1 : -1).map(stream => {
+                    const eventsList = (stream.events || []).map(event => {
+                        return h("div", { className: "card", key: event.id, style: { marginTop: '10px' } }, [
+                            h("div", { className: "card-header" }, [
+                                h("div", { className: "card-header-title" }, ["#" + event.position])
+                            ]),
+                            h("div", { className: "card-content" }, [
+                                h("div", {}, ["Id: " + event.id]),
+                                h("div", {}, ["Type: " + event.eventName]),
+                                h("div", {}, ["Data: " + JSON.stringify(event.data, null, 4)])
                             ])
+                        ]);
+                    });
+
+                    return h("div", { className: "card", key: stream.id.toString(), style: { marginBottom: '10px' } }, [
+                        h("div", { className: "card-header" }, [
+                            h("div", { className: "card-header-title" }, [stream.id])
                         ]),
                         h("div", { className: "card-content" }, [
-                            h("div", [
-                                JSON.stringify(event.data, null, 4)
-                            ])
+                            h("button", {
+                                className: "button is-rounded is-primary is-outlined",
+                                onclick: () => dispatch(actionsCreator.history.loadEvents.started(stream.id))
+                            }, [stream.events ? "Refresh events" : "Load events"]),
+                            ...eventsList
                         ])
                     ]);
                 })
@@ -1309,8 +1367,8 @@ const ofType = (type: string) => {
     return filter<Action>(action => action.type === type);
 };
 
-const httpHeaders = { 
-    "Content-Type": "application/json" 
+const httpHeaders = {
+    "Content-Type": "application/json"
 };
 
 const loadAppEpic$ = action$.pipe(
@@ -1320,10 +1378,10 @@ const loadAppEpic$ = action$.pipe(
             ajax.getJSON<Item[]>(inventoryService.url + "api/all"),
             ajax.getJSON<Cart>(shopService.url + "api/cart"),
             ajax.getJSON<Order[]>(deliveryService.url + "api/all"),
-            ajax.getJSON<Event[]>(eventHistoryService.url + "api/events")
+            ajax.getJSON<EventStream[]>(eventHistoryService.url + "api/streams")
         ]).pipe(
-            map(([items, cart, orders, events]) => {
-                return actionsCreator.app.load.succeed(items, cart, orders, events);
+            map(([items, cart, orders, streams]) => {
+                return actionsCreator.app.load.succeed(items, cart, orders, streams);
             }),
             catchError(error => of(actionsCreator.app.load.failed(error)))
         )
@@ -1424,6 +1482,16 @@ const supplyItemEpic$ = action$.pipe(
     )
 );
 
+const loadStreamEventsEpic$ = action$.pipe(
+    ofType("LOAD_STREAM_EVENTS"),
+    mergeMap((action: LoadStreamEventsAction) =>
+        ajax.getJSON<Event[]>(eventHistoryService.url + `api/streams/${action.streamId}/events`, httpHeaders).pipe(
+            map(events => actionsCreator.history.loadEvents.succeed(action.streamId, events)),
+            catchError(error => of(actionsCreator.history.loadEvents.failed(error)))
+        )
+    )
+);
+
 const epics: Observable<Action>[] = [
     loadAppEpic$,
     addItemInCartEpic$,
@@ -1435,20 +1503,13 @@ const epics: Observable<Action>[] = [
     createItemEpic$,
     createItemSucceedEpic$,
     updateItemPriceEpic$,
-    supplyItemEpic$
+    supplyItemEpic$,
+    loadStreamEventsEpic$
 ];
 
 merge(...epics).subscribe(dispatch);
 
 // observe websockets (via signalr)
-const eventConnection = new HubConnectionBuilder().withUrl(eventHistoryService.url + "event").build();
-eventConnection.on("Sync", event => {
-    dispatch(actionsCreator.events.add(event));
-});
-eventConnection.start().catch(error => {
-    return console.error(error.toString());
-});
-
 const cartConnection = new HubConnectionBuilder().withUrl(shopService.url + "cart").build();
 cartConnection.on("Sync", cart => {
     dispatch(actionsCreator.shop.upsert(cart));

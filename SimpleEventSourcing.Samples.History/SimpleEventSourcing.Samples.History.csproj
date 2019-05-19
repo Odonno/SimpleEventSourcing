@@ -10,12 +10,15 @@
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="1.50.5" />
+    <PackageReference Include="Google.Cloud.Firestore" Version="1.0.0-beta20" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
     <PackageReference Include="Tagada" Version="1.3.0" />
     <PackageReference Include="Tagada.Swagger" Version="1.3.0" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\SimpleEventSourcing.CloudFirestore\SimpleEventSourcing.CloudFirestore.csproj" />
+    <ProjectReference Include="..\SimpleEventSourcing.Samples.Providers\SimpleEventSourcing.Samples.Providers.csproj" />
     <ProjectReference Include="..\SimpleEventSourcing\SimpleEventSourcing.csproj" />
   </ItemGroup>
 
