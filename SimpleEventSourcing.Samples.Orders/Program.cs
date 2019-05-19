@@ -79,7 +79,7 @@ namespace SimpleEventSourcing.Samples.Delivery
                         .Build();
 
                     app.Map("/api")
-                        .Get("/all", GetAllOrders)
+                        .Get("/all", projection.GetAllOrders)
                         .PostAsync<ValidateOrderCommand>("/validate", eventStore.ApplyAsync)
                         .PostAsync<CancelOrderCommand>("/cancel", eventStore.ApplyAsync)
                         .AddSwagger()
@@ -123,29 +123,6 @@ namespace SimpleEventSourcing.Samples.Delivery
                 );
             }
         }
-
-        public static Func<GetOrdersQuery, IEnumerable<Order>> GetAllOrders = _ =>
-        {
-            using (var connection = GetDatabaseConnection())
-            {
-                var orders = connection
-                    .Query<OrderDbo>("SELECT * FROM [Order]")
-                    .ToList();
-
-                return orders.Select(order =>
-                {
-                    return new Order
-                    {
-                        Id = order.Id,
-                        CreatedDate = order.CreatedDate,
-                        Number = order.Number,
-                        IsConfirmed = order.IsConfirmed,
-                        IsCanceled = order.IsCanceled,
-                        Items = JsonConvert.DeserializeObject<IEnumerable<OrderedItem>>(order.Items)
-                    };
-                });
-            }
-        };
     }
 
     public class OrderDbo

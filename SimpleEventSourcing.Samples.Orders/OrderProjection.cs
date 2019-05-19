@@ -44,6 +44,29 @@ namespace SimpleEventSourcing.Samples.Delivery
             return _updatedEntitySubject.DistinctUntilChanged();
         }
 
+        public IEnumerable<Order> GetAllOrders()
+        {
+            using (var connection = GetDatabaseConnection())
+            {
+                var orders = connection
+                    .Query<OrderDbo>("SELECT * FROM [Order]")
+                    .ToList();
+
+                return orders.Select(order =>
+                {
+                    return new Order
+                    {
+                        Id = order.Id,
+                        CreatedDate = order.CreatedDate,
+                        Number = order.Number,
+                        IsConfirmed = order.IsConfirmed,
+                        IsCanceled = order.IsCanceled,
+                        Items = JsonConvert.DeserializeObject<IEnumerable<OrderedItem>>(order.Items)
+                    };
+                });
+            }
+        }
+
         protected override void Handle(StreamedEvent @event, bool replayed = false)
         {
             if (@event.EventName == nameof(OrderCreated))

@@ -2,6 +2,7 @@
 using Dapper;
 using SimpleEventSourcing.Samples.Events;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -40,6 +41,26 @@ namespace SimpleEventSourcing.Samples.Inventory
         public IObservable<Item> ObserveEntityChange()
         {
             return _updatedEntitySubject.DistinctUntilChanged();
+        }
+
+        public IEnumerable<Item> GetAllItems()
+        {
+            using (var connection = GetDatabaseConnection())
+            {
+                return connection
+                    .Query<ItemDbo>("SELECT * FROM [Item]")
+                    .Select(item =>
+                    {
+                        return new Item
+                        {
+                            Id = item.Id,
+                            Name = item.Name,
+                            Price = Convert.ToDecimal(item.Price),
+                            RemainingQuantity = item.RemainingQuantity,
+                        };
+                    })
+                    .ToList();
+            }
         }
 
         protected override void Handle(StreamedEvent @event, bool replayed = false)

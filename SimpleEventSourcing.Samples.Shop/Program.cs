@@ -78,7 +78,7 @@ namespace SimpleEventSourcing.Samples.Shop
                         .Build();
 
                     app.Map("/api")
-                        .Get<GetCartQuery, Cart>("/cart", _ => projection.GetCart())
+                        .Get("/cart", projection.GetCart)
                         .PostAsync<AddItemInCartCommand>("/cart/addItem", eventStore.ApplyAsync)
                         .PostAsync<RemoveItemFromCartCommand>("/cart/removeItem", eventStore.ApplyAsync)
                         .PostAsync<ResetCartCommand>("/cart/reset", eventStore.ApplyAsync)

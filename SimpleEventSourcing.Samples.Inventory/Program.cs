@@ -79,7 +79,7 @@ namespace SimpleEventSourcing.Samples.Inventory
                         .Build();
 
                     app.Map("/api")
-                        .Get("/all", GetAllItems)
+                        .Get("/all", projection.GetAllItems)
                         .PostAsync<CreateItemCommand>("/create", eventStore.ApplyAsync)
                         .PostAsync<UpdateItemPriceCommand>("/updatePrice", eventStore.ApplyAsync)
                         .PostAsync<SupplyItemCommand>("/supply", eventStore.ApplyAsync)
@@ -122,26 +122,6 @@ namespace SimpleEventSourcing.Samples.Inventory
                 );
             }
         }
-
-        public static Func<GetItemsQuery, IEnumerable<Item>> GetAllItems = _ =>
-        {
-            using (var connection = GetDatabaseConnection())
-            {
-                return connection
-                    .Query<ItemDbo>("SELECT * FROM [Item]")
-                    .Select(item =>
-                    {
-                        return new Item
-                        {
-                            Id = item.Id,
-                            Name = item.Name,
-                            Price = Convert.ToDecimal(item.Price),
-                            RemainingQuantity = item.RemainingQuantity,
-                        };
-                    })
-                    .ToList();
-            }
-        };
     }
 
     public class ItemDbo
