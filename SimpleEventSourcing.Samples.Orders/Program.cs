@@ -80,8 +80,8 @@ namespace SimpleEventSourcing.Samples.Delivery
 
                     app.Map("/api")
                         .Get("/all", GetAllOrders)
-                        .Post<ValidateOrderCommand>("/validate", async (command) => await eventStore.ApplyAsync(command))
-                        .Post<CancelOrderCommand>("/cancel", async (command) => await eventStore.ApplyAsync(command))
+                        .PostAsync<ValidateOrderCommand>("/validate", eventStore.ApplyAsync)
+                        .PostAsync<CancelOrderCommand>("/cancel", eventStore.ApplyAsync)
                         .AddSwagger()
                         .Use();
 

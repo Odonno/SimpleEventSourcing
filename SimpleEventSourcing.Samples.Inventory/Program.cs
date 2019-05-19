@@ -80,9 +80,9 @@ namespace SimpleEventSourcing.Samples.Inventory
 
                     app.Map("/api")
                         .Get("/all", GetAllItems)
-                        .Post<CreateItemCommand>("/create", async (command) => await eventStore.ApplyAsync(command))
-                        .Post<UpdateItemPriceCommand>("/updatePrice", async (command) => await eventStore.ApplyAsync(command))
-                        .Post<SupplyItemCommand>("/supply", async (command) => await eventStore.ApplyAsync(command))
+                        .PostAsync<CreateItemCommand>("/create", eventStore.ApplyAsync)
+                        .PostAsync<UpdateItemPriceCommand>("/updatePrice", eventStore.ApplyAsync)
+                        .PostAsync<SupplyItemCommand>("/supply", eventStore.ApplyAsync)
                         .AddSwagger()
                         .Use();
 

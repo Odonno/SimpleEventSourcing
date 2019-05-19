@@ -79,10 +79,10 @@ namespace SimpleEventSourcing.Samples.Shop
 
                     app.Map("/api")
                         .Get<GetCartQuery, Cart>("/cart", _ => projection.GetCart())
-                        .Post<AddItemInCartCommand>("/cart/addItem", async (command) => await eventStore.ApplyAsync(command))
-                        .Post<RemoveItemFromCartCommand>("/cart/removeItem", async (command) => await eventStore.ApplyAsync(command))
-                        .Post<ResetCartCommand>("/cart/reset", async (command) => await eventStore.ApplyAsync(command))
-                        .Post<CreateOrderFromCartCommand>("/order", async (command) => await eventStore.ApplyAsync(command))
+                        .PostAsync<AddItemInCartCommand>("/cart/addItem", eventStore.ApplyAsync)
+                        .PostAsync<RemoveItemFromCartCommand>("/cart/removeItem", eventStore.ApplyAsync)
+                        .PostAsync<ResetCartCommand>("/cart/reset", eventStore.ApplyAsync)
+                        .PostAsync<CreateOrderFromCartCommand>("/order", eventStore.ApplyAsync)
                         .AddSwagger()
                         .Use();
 
