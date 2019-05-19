@@ -46,27 +46,47 @@ namespace SimpleEventSourcing.Samples.Delivery
 
         protected override void Handle(StreamedEvent @event, bool replayed = false)
         {
-            if (@event.EventName == nameof(OrderedFromCart))
+            if (@event.EventName == nameof(OrderCreated))
             {
-                var data = @event.Data.ConvertTo<OrderedFromCart>();
+                var data = @event.Data.ConvertTo<OrderCreated>();
                 var metadata = @event.Metadata.ConvertTo<StreamedEventMetadata>();
 
                 using (var connection = GetDatabaseConnection())
                 {
-                    var newOrder = connection.Query<OrderDbo>(
+                    connection.Execute(
                         @"
-                        INSERT INTO [Order] 
-                        ([Number], [CreatedDate], [IsConfirmed], [IsCanceled], [Items])
-                        VALUES ((SELECT IFNULL(MAX([Number]), 0) + 1 FROM [Order]), @CreatedDate, 0, 0, @Items);
-
-                        SELECT * FROM [Order] ORDER BY [Id] DESC LIMIT 1;
+                            INSERT INTO [Order] 
+                            ([Id], [Number], [CreatedDate], [IsConfirmed], [IsCanceled], [Items])
+                            VALUES (@Id, (SELECT IFNULL(MAX([Number]), 0) + 1 FROM [Order]), @CreatedDate, 0, 0, @Items)
                         ",
-                        new {
+                        new
+                        {
+                            data.Id,
                             metadata.CreatedAt,
-                            Items = JsonConvert.SerializeObject(new List<OrderedItem>()) // TODO
+                            Items = JsonConvert.SerializeObject(data.Items)
                         }
+                    );
+
+                    var newOrder = connection.Query<OrderDbo>(
+                        @"SELECT * FROM [Order] WHERE [Id] = @Id"
                     )
                     .Single();
+                    //var newOrder = connection.Query<OrderDbo>(
+                    //    @"
+                    //    INSERT INTO [Order] 
+                    //    ([Id], [Number], [CreatedDate], [IsConfirmed], [IsCanceled], [Items])
+                    //    VALUES (@Id, (SELECT IFNULL(MAX([Number]), 0) + 1 FROM [Order]), @CreatedDate, 0, 0, @Items);
+
+                    //    SELECT * FROM [Order] WHERE [Id] = @Id;
+                    //    ",
+                    //    new
+                    //    {
+                    //        data.Id,
+                    //        metadata.CreatedAt,
+                    //        Items = JsonConvert.SerializeObject(data.Items)
+                    //    }
+                    //)
+                    //.Single();
 
                     if (!replayed)
                     {

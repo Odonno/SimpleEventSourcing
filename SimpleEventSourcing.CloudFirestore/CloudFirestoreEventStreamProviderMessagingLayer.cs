@@ -1,5 +1,7 @@
 ﻿using Google.Cloud.Firestore;
 using System;
+using System.Collections.Concurrent;
+using System.Linq;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -19,13 +21,19 @@ namespace SimpleEventSourcing.CloudFirestore
         {
             _eventStreamProviderStorageLayer = eventStreamProviderStorageLayer;
 
-            ListenNewStreams(streamsCollectionReference).Subscribe(async documentSnapshot =>
-            {
-                string streamId = documentSnapshot.Id;
-                var stream = await _eventStreamProviderStorageLayer.GetStreamAsync(streamId);
+            var newStreams = new ConcurrentBag<string>();
 
-                _newStreamsSubject.OnNext(stream);
-            });
+            ListenNewStreams(streamsCollectionReference)
+                .Where(documentSnapshot => !newStreams.Contains(documentSnapshot.Id))
+                .Subscribe(async documentSnapshot =>
+                {
+                    string streamId = documentSnapshot.Id;
+
+                    newStreams.Add(streamId);
+                    var stream = await _eventStreamProviderStorageLayer.GetStreamAsync(streamId);
+
+                    _newStreamsSubject.OnNext(stream);
+                });
         }
 
         private static bool ShouldListenForNewStreams(DateTime startListeningAt, Timestamp? documentCreatedAt)

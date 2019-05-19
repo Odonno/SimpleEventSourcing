@@ -67,15 +67,16 @@ namespace SimpleEventSourcing.Samples.Inventory
                     var dataProvider = new CloudFirestoreProvider("event-sourcing-da233", "firebase.json");
                     var cloudFirestoreStreamProvider = new CloudFirestoreEventStreamProvider<StreamedEvent>(dataProvider.Database, new StreamedEventFirestoreConverter(), new EventStreamFirestoreConverter());
 
+                    var projection = new ItemProjection(cloudFirestoreStreamProvider);
+
                     var eventStore = EventStoreBuilder<StreamedEvent>
                         .New()
                         .WithStreamProvider(cloudFirestoreStreamProvider)
                         .WithApplyFunction(new CreateItemApplyFunction())
                         .WithApplyFunction(new UpdateItemPriceApplyFunction())
                         .WithApplyFunction(new SupplyItemApplyFunction())
+                        .WithEvolveFunction(new ShipItemEvolveFunction())
                         .Build();
-
-                    var projection = new ItemProjection(cloudFirestoreStreamProvider);
 
                     app.Map("/api")
                         .Get("/all", GetAllItems)
@@ -223,6 +224,43 @@ namespace SimpleEventSourcing.Samples.Inventory
 
             var events = List(@event);
             await stream.AppendEventsAsync(CreateStreamedEvents(streamId, currentPosition, events));
+        }
+    }
+
+    public class ShipItemEvolveFunction : IEvolveFunction<StreamedEvent>
+    {
+        public bool OfEvent(StreamedEvent @event)
+        {
+            return @event.EventName == nameof(OrderValidated);
+        }
+        public Task<bool> ShouldListenStreamsAsync(string streamId)
+        {
+            return Task.FromResult(streamId.StartsWith("order-"));
+        }
+        public async Task ExecuteAsync(StreamedEvent @event, IEventStreamProvider<StreamedEvent> eventStreamProvider)
+        {
+            var data = @event.Data as OrderValidated;
+            var orderStream = await eventStreamProvider.GetStreamAsync($"order-{data.OrderId}");
+
+            var orderCreatedEvent = await orderStream.GetEventAsync(1);
+            var orderCreatedData = orderCreatedEvent.Data as OrderCreated;
+
+            foreach (var item in orderCreatedData.Items)
+            {
+                var shippedItemEvent = new ItemShipped
+                {
+                    OrderId = data.OrderId,
+                    ItemId = item.ItemId,
+                    Quantity = item.Quantity
+                };
+
+                string streamId = $"item-{item.ItemId}";
+                var stream = await eventStreamProvider.GetStreamAsync(streamId);
+                var currentPosition = await stream.GetCurrentPositionAsync();
+
+                var events = List(shippedItemEvent);
+                await stream.AppendEventsAsync(CreateStreamedEvents(streamId, currentPosition, events));
+            }
         }
     }
 }

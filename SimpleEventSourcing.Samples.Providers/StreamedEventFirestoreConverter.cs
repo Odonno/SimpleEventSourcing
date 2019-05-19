@@ -59,15 +59,6 @@ namespace SimpleEventSourcing.Samples.Providers
                     Quantity = (long)dataDictionary["quantity"]
                 };
             }
-            if (eventName == nameof(ItemReserved))
-            {
-                return new ItemReserved
-                {
-                    ItemId = dataDictionary["itemId"] as string,
-                    OrderId = dataDictionary["orderId"] as string,
-                    Quantity = (long)dataDictionary["quantity"]
-                };
-            }
             if (eventName == nameof(ItemShipped))
             {
                 return new ItemShipped
@@ -80,17 +71,18 @@ namespace SimpleEventSourcing.Samples.Providers
 
             if (eventName == nameof(OrderCreated))
             {
-                var itemsDictionaries = dataDictionary["items"] as List<Dictionary<string, object>>;
+                var itemsDictionaries = dataDictionary["items"] as List<object>;
                 return new OrderCreated
                 {
                     Id = dataDictionary["id"] as string,
                     Items = new List<OrderCreated.OrderedItem>(
                         itemsDictionaries.Select(d =>
                         {
+                            var i = d as Dictionary<string, object>;
                             return new OrderCreated.OrderedItem
                             {
-                                ItemId = d["itemId"] as string,
-                                Quantity = (long)d["quantity"]
+                                ItemId = i["itemId"] as string,
+                                Quantity = (long)i["quantity"]
                             };
                         })
                     )
@@ -133,7 +125,21 @@ namespace SimpleEventSourcing.Samples.Providers
             }
             if (eventName == nameof(OrderedFromCart))
             {
-                return new OrderedFromCart();
+                var itemsDictionaries = dataDictionary["items"] as List<object>;
+                return new OrderedFromCart
+                {
+                    Items = new List<OrderedFromCart.OrderedItem>(
+                        itemsDictionaries.Select(d =>
+                        {
+                            var i = d as Dictionary<string, object>;
+                            return new OrderedFromCart.OrderedItem
+                            {
+                                ItemId = i["itemId"] as string,
+                                Quantity = (long)i["quantity"]
+                            };
+                        })
+                    )
+                };
             }
 
             return null;
@@ -180,15 +186,6 @@ namespace SimpleEventSourcing.Samples.Providers
                     { "quantity", itemSupplied.Quantity }
                 };
             }
-            if (data is ItemReserved itemReserved)
-            {
-                return new Dictionary<string, object>
-                {
-                    { "itemId", itemReserved.ItemId },
-                    { "orderId", itemReserved.OrderId },
-                    { "quantity", itemReserved.Quantity }
-                };
-            }
             if (data is ItemShipped itemShipped)
             {
                 return new Dictionary<string, object>
@@ -206,14 +203,16 @@ namespace SimpleEventSourcing.Samples.Providers
                     { "id", orderCreated.Id },
                     {
                         "items",
-                        orderCreated.Items.Select(i => 
-                        {
-                            return new Dictionary<string, object>
+                        orderCreated.Items
+                            .Select(i => 
                             {
-                                { "itemId", i.ItemId },
-                                { "quantity", i.Quantity }
-                            };
-                        })
+                                return new Dictionary<string, object>
+                                {
+                                    { "itemId", i.ItemId },
+                                    { "quantity", i.Quantity }
+                                };
+                            })
+                            .ToList()
                     }
                 };
             }
@@ -252,9 +251,24 @@ namespace SimpleEventSourcing.Samples.Providers
             {
                 return new Dictionary<string, object>();
             }
-            if (data is OrderedFromCart)
+            if (data is OrderedFromCart orderedFromCart)
             {
-                return new Dictionary<string, object>();
+                return new Dictionary<string, object>
+                {
+                    {
+                        "items",
+                        orderedFromCart.Items
+                            .Select(i =>
+                            {
+                                return new Dictionary<string, object>
+                                {
+                                    { "itemId", i.ItemId },
+                                    { "quantity", i.Quantity }
+                                };
+                            })
+                            .ToList()
+                    }
+                };
             }
             return new Dictionary<string, object>();
         }

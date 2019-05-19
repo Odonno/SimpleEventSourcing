@@ -42,6 +42,19 @@ namespace SimpleEventSourcing.Samples.Shop
             return _updatedEntitySubject.DistinctUntilChanged();
         }
 
+        public Cart GetCart()
+        {
+            using (var connection = GetDatabaseConnection())
+            {
+                return new Cart
+                {
+                    Items = connection
+                        .Query<ItemAndQuantity>("SELECT [Id] AS ItemId, [Quantity] FROM [Cart]")
+                        .ToList()
+                };
+            }
+        }
+
         protected override void Handle(StreamedEvent @event, bool replayed = false)
         {
             if (@event.EventName == nameof(CartItemSelected))
@@ -132,17 +145,7 @@ namespace SimpleEventSourcing.Samples.Shop
 
         private void CartUpdated()
         {
-            using (var connection = GetDatabaseConnection())
-            {
-                var cart = new Cart
-                {
-                    Items = connection
-                        .Query<ItemAndQuantity>("SELECT [Id] AS ItemId, [Quantity] FROM [Cart]")
-                        .ToList()
-                };
-
-                _updatedEntitySubject.OnNext(cart);
-            }
+            _updatedEntitySubject.OnNext(GetCart());
         }
     }
 }

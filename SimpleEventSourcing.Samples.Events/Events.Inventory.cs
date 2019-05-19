@@ -20,13 +20,6 @@
         public long Quantity { get; set; }
     }
 
-    public class ItemReserved
-    {
-        public string ItemId { get; set; }
-        public long Quantity { get; set; }
-        public string OrderId { get; set; }
-    }
-
     public class ItemShipped
     {
         public string ItemId { get; set; }

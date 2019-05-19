@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using SimpleEventSourcing.Samples.Events;
 using Converto;
 using static SimpleEventSourcing.Samples.Delivery.Configuration;
+using static System.Guid;
 using static SimpleEventSourcing.Extensions;
 
 namespace SimpleEventSourcing.Samples.Delivery
@@ -67,14 +68,15 @@ namespace SimpleEventSourcing.Samples.Delivery
                     var dataProvider = new CloudFirestoreProvider("event-sourcing-da233", "firebase.json");
                     var streamProvider = new CloudFirestoreEventStreamProvider<StreamedEvent>(dataProvider.Database, new StreamedEventFirestoreConverter(), new EventStreamFirestoreConverter());
 
+                    var projection = new OrderProjection(streamProvider);
+
                     var eventStore = EventStoreBuilder<StreamedEvent>
                         .New()
                         .WithStreamProvider(streamProvider)
                         .WithApplyFunction(new ValidateOrderApplyFunction())
                         .WithApplyFunction(new CancelOrderApplyFunction())
+                        .WithEvolveFunction(new CreateOrderEvolveFunction())
                         .Build();
-
-                    var projection = new OrderProjection(streamProvider);
 
                     app.Map("/api")
                         .Get("/all", GetAllOrders)
@@ -212,6 +214,39 @@ namespace SimpleEventSourcing.Samples.Delivery
             var currentPosition = await stream.GetCurrentPositionAsync();
 
             var events = List(@event);
+            await stream.AppendEventsAsync(CreateStreamedEvents(streamId, currentPosition, events));
+        }
+    }
+
+    public class CreateOrderEvolveFunction : IEvolveFunction<StreamedEvent>
+    {
+        public bool OfEvent(StreamedEvent @event)
+        {
+            return @event.EventName == nameof(OrderedFromCart);
+        }
+        public Task<bool> ShouldListenStreamsAsync(string streamId)
+        {
+            return Task.FromResult(streamId == "cart");
+        }
+        public async Task ExecuteAsync(StreamedEvent @event, IEventStreamProvider<StreamedEvent> eventStreamProvider)
+        {
+            var data = @event.Data as OrderedFromCart;
+
+            string orderId = NewGuid().ToString();
+
+            var orderCreatedEvent = new OrderCreated
+            {
+                Id = orderId,
+                Items = data.Items
+                    .Select(item => new OrderCreated.OrderedItem { ItemId = item.ItemId, Quantity = item.Quantity })
+                    .ToList()
+            };
+
+            string streamId = $"order-{orderId}";
+            var stream = await eventStreamProvider.GetStreamAsync(streamId);
+            var currentPosition = await stream.GetCurrentPositionAsync();
+
+            var events = List(orderCreatedEvent);
             await stream.AppendEventsAsync(CreateStreamedEvents(streamId, currentPosition, events));
         }
     }

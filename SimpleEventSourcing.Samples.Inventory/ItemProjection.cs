@@ -134,21 +134,21 @@ namespace SimpleEventSourcing.Samples.Inventory
                     }
                 }
             }
-            if (@event.EventName == nameof(OrderValidated))
+            if (@event.EventName == nameof(ItemShipped))
             {
-                var data = @event.Data.ConvertTo<OrderValidated>();
+                var data = @event.Data.ConvertTo<ItemShipped>();
 
                 using (var connection = GetDatabaseConnection())
                 {
                     var updatedItems = connection.Query<ItemDbo>(
                         @"
                         UPDATE [Item] 
-                        SET [RemainingQuantity] = [RemainingQuantity] - (SELECT [Quantity] FROM [ItemOrdered] WHERE [OrderId] = @OrderId AND [ItemId] = [Item].[Id])
-                        WHERE [Id] IN (SELECT [ItemId] FROM [ItemOrdered] WHERE [OrderId] = @OrderId);
+                        SET [RemainingQuantity] = [RemainingQuantity] - @Quantity
+                        WHERE [Id] = @ItemId;
 
-                        SELECT * FROM [Item] WHERE [Id] IN (SELECT [ItemId] FROM [ItemOrdered] WHERE [OrderId] = @OrderId);
+                        SELECT * FROM [Item] WHERE [Id] = @ItemId;
                         ",
-                        new { data.OrderId }
+                        new { data.ItemId, data.Quantity }
                     )
                     .ToList();
 

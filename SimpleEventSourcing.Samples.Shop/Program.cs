@@ -66,19 +66,19 @@ namespace SimpleEventSourcing.Samples.Shop
                     var dataProvider = new CloudFirestoreProvider("event-sourcing-da233", "firebase.json");
                     var streamProvider = new CloudFirestoreEventStreamProvider<StreamedEvent>(dataProvider.Database, new StreamedEventFirestoreConverter(), new EventStreamFirestoreConverter());
 
+                    var projection = new CartProjection(streamProvider);
+
                     var eventStore = EventStoreBuilder<StreamedEvent>
                         .New()
                         .WithStreamProvider(streamProvider)
                         .WithApplyFunction(new AddItemInCartApplyFunction())
                         .WithApplyFunction(new RemoveItemFromCartApplyFunction())
                         .WithApplyFunction(new ResetCartApplyFunction())
-                        .WithApplyFunction(new CreateOrderFromCartApplyFunction())
+                        .WithApplyFunction(new CreateOrderFromCartApplyFunction(projection))
                         .Build();
 
-                    var projection = new CartProjection(streamProvider);
-
                     app.Map("/api")
-                        .Get("/cart", GetCart)
+                        .Get<GetCartQuery, Cart>("/cart", _ => projection.GetCart())
                         .Post<AddItemInCartCommand>("/cart/addItem", async (command) => await eventStore.ApplyAsync(command))
                         .Post<RemoveItemFromCartCommand>("/cart/removeItem", async (command) => await eventStore.ApplyAsync(command))
                         .Post<ResetCartCommand>("/cart/reset", async (command) => await eventStore.ApplyAsync(command))
@@ -120,19 +120,6 @@ namespace SimpleEventSourcing.Samples.Shop
                 );
             }
         }
-
-        public static Func<GetCartQuery, Cart> GetCart = _ =>
-        {
-            using (var connection = GetDatabaseConnection())
-            {
-                return new Cart
-                {
-                    Items = connection
-                        .Query<ItemAndQuantity>("SELECT [Id] AS ItemId, [Quantity] FROM [Cart]")
-                        .ToList()
-                };
-            }
-        };
     }
 
     public class Cart
@@ -209,9 +196,21 @@ namespace SimpleEventSourcing.Samples.Shop
     }
     public class CreateOrderFromCartApplyFunction : IApplyFunction<CreateOrderFromCartCommand, StreamedEvent>
     {
+        private readonly CartProjection _cartProjection;
+
+        public CreateOrderFromCartApplyFunction(CartProjection cartProjection)
+        {
+            _cartProjection = cartProjection;
+        }
+
         public async Task ExecuteAsync(CreateOrderFromCartCommand command, IEventStreamProvider<StreamedEvent> eventStreamProvider)
         {
-            var @event = command.ConvertTo<OrderedFromCart>();
+            var @event = new OrderedFromCart
+            {
+                Items = _cartProjection.GetCart().Items
+                    .Select(item => new OrderedFromCart.OrderedItem { ItemId = item.ItemId, Quantity = item.Quantity })
+                    .ToList()
+            };
 
             string streamId = "cart";
             var stream = await eventStreamProvider.GetStreamAsync(streamId);
